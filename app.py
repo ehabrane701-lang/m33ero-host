@@ -381,7 +381,13 @@ def process_monitor():
 
 threading.Thread(target=process_monitor, daemon=True).start()
 
-# ============== الصفحات المطلوبة فقط ==============
+# ============== الصفحات المطلوبة (تم إصلاح مسارات 404 هنا) ==============
+@app.route('/')
+def home():
+    if 'email' in session:
+        return redirect('/dashboard')
+    return redirect('/login')
+
 @app.route('/dashboard')
 def dashboard():
     if 'email' not in session:
@@ -393,12 +399,6 @@ def login_page():
     if 'email' in session:
         return redirect('/dashboard')
     return send_from_directory(BASE_DIR, 'login.html')
-
-@app.route('/')
-def home():
-    if 'email' in session:
-        return redirect('/dashboard')
-    return redirect('/login')
 
 # ============== API المصادقة ==============
 @app.route('/api/register', methods=['POST'])
