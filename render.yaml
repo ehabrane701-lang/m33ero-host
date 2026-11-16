@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: mero-host-web
+    env: python
+    region: frankfurt
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+
+  - type: worker
+    name: mero-host-worker
+    env: python
+    region: frankfurt
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python telegram_bot_runner.py
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
