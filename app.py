@@ -1,377 +1,1038 @@
+# app.py - نظام استضافة متطور بصفحة واحدة (Dashboard / Login)
 import os
-from flask import Flask, render_template_string, request, jsonify
+import json
+import re
+import subprocess
+import psutil
+import socket
+import sys
+import hashlib
+import secrets
+import time
+import threading
+import requests
+import shutil
+import zipfile
+import signal
+from datetime import datetime, timedelta
+from flask import Flask, send_from_directory, request, jsonify, session, redirect
 
-app = Flask(__name__)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+USERS_DIR = os.path.join(BASE_DIR, "USERS")
+os.makedirs(USERS_DIR, exist_ok=True)
 
-# صفحة المنصة الأمامية والخارقة المطابقة تماماً لتصميمك
-INDEX_HTML = """
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>𝑰𝑪𝑶 | منصة الاستضافة الخارقة والذكية</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #311042 100%);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 24px;
-            color: #f8fafc;
-            direction: rtl;
-            font-size: 14px;
-        }
-        :root {
-            --primary: #6366f1; --primary-light: #818cf8; --primary-dark: #4f46e5;
-            --secondary: #ec4899; --accent: #8b5cf6; --success: #10b981;
-            --warning: #f59e0b; --danger: #ef4444;
-            --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.2);
-            --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.3);
-            --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.4);
-            --shadow-xl: 0 30px 60px rgba(0, 0, 0, 0.6);
-            --radius-sm: 8px; --radius-md: 16px; --radius-lg: 24px; --radius-xl: 32px;
-            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .hidden { display: none !important; }
-        .btn {
-            padding: 12px 24px; border: none; border-radius: var(--radius-md);
-            font-weight: 600; font-size: 14px; cursor: pointer; transition: var(--transition);
-            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-        }
-        .btn-primary { background: linear-gradient(135deg, var(--primary), var(--accent)); color: white; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4); }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(99, 102, 241, 0.6); }
-        .btn-outline { background: rgba(255, 255, 255, 0.05); border: 2px solid rgba(255, 255, 255, 0.1); color: #f8fafc; }
-        .btn-outline:hover { border-color: var(--primary-light); color: var(--primary-light); background: rgba(99, 102, 241, 0.1); }
-        .btn-danger { background: linear-gradient(135deg, var(--danger), #dc2626); color: white; }
-        .btn-danger:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4); }
-        .login-wrapper {
-            width: 100%; max-width: 450px; background: rgba(30, 41, 59, 0.7);
-            backdrop-filter: blur(20px); border-radius: var(--radius-xl); box-shadow: var(--shadow-xl);
-            border: 1px solid rgba(255, 255, 255, 0.1); overflow: hidden;
-        }
-        .login-header { background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); padding: 30px; text-align: center; color: white; }
-        .login-header h1 { font-size: 28px; font-weight: 700; margin-bottom: 6px; }
-        .login-header p { font-size: 14px; opacity: 0.9; }
-        .login-tabs { display: flex; padding: 12px 12px 0; gap: 8px; background: rgba(15, 23, 42, 0.5); }
-        .login-tab {
-            flex: 1; padding: 12px; border: none; background: rgba(255, 255, 255, 0.05); color: #94a3b8;
-            font-weight: 600; cursor: pointer; border-radius: var(--radius-md) var(--radius-md) 0 0;
-            transition: var(--transition); font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 8px;
-        }
-        .login-tab.active { background: rgba(30, 41, 59, 0.9); color: var(--primary-light); border-top: 2px solid var(--primary); }
-        .login-content { background: rgba(30, 41, 59, 0.9); padding: 24px; }
-        .form-group { margin-bottom: 20px; }
-        .form-label { display: block; margin-bottom: 6px; color: #cbd5e1; font-weight: 500; font-size: 13px; }
-        .form-input {
-            width: 100%; padding: 12px 16px; border: 2px solid rgba(255, 255, 255, 0.1);
-            border-radius: var(--radius-md); font-size: 14px; transition: var(--transition);
-            background: rgba(15, 23, 42, 0.6); color: white;
-        }
-        .form-input:focus { outline: none; border-color: var(--primary); background: rgba(15, 23, 42, 0.9); box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2); }
-        .form-error { color: var(--danger); font-size: 12px; margin-top: 4px; display: none; }
-        .form-error.show { display: block; }
-        .form-info { color: #94a3b8; font-size: 11px; margin-top: 4px; }
-        .app-wrapper {
-            width: 100%; max-width: 1300px; margin: 0 auto; background: rgba(15, 23, 42, 0.75);
-            backdrop-filter: blur(25px); border-radius: var(--radius-xl); box-shadow: var(--shadow-xl);
-            border: 1px solid rgba(255, 255, 255, 0.1); overflow: hidden;
-        }
-        .navbar {
-            background: rgba(30, 41, 59, 0.85); padding: 12px 24px; border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;
-        }
-        .logo-area { display: flex; align-items: center; gap: 10px; }
-        .logo-icon {
-            width: 40px; height: 40px; background: linear-gradient(135deg, var(--primary), var(--secondary));
-            border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; color: white; font-size: 20px;
-        }
-        .logo-text h1 { font-size: 20px; font-weight: 700; background: linear-gradient(135deg, #818cf8, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .logo-text p { font-size: 11px; color: #94a3b8; }
-        .user-area { display: flex; align-items: center; gap: 12px; }
-        .user-badge {
-            background: rgba(255, 255, 255, 0.08); padding: 6px 16px; border-radius: 40px; font-weight: 600;
-            font-size: 13px; color: #e2e8f0; display: flex; align-items: center; gap: 6px; border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        .dev-card {
-            background: rgba(30, 41, 59, 0.6); margin: 20px 24px; padding: 16px 24px; border-radius: var(--radius-lg);
-            display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; border: 1px solid rgba(255, 255, 255, 0.08);
-        }
-        .dev-badge { background: linear-gradient(135deg, #334155, #1e293b); color: white; padding: 6px 16px; border-radius: 40px; font-weight: 600; font-size: 13px; }
-        .dev-links { display: flex; gap: 10px; }
-        .dev-link {
-            background: rgba(255, 255, 255, 0.05); color: #e2e8f0; padding: 6px 16px; border-radius: 40px; text-decoration: none;
-            font-weight: 500; font-size: 13px; transition: var(--transition); display: flex; align-items: center; gap: 6px; border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        .dev-link:hover { background: var(--primary); color: white; }
-        .welcome-banner {
-            background: linear-gradient(135deg, #3730a3 0%, #6d28d9 50%, #9333ea 100%);
-            margin: 0 24px 20px; padding: 30px; border-radius: var(--radius-lg); color: white; text-align: center; box-shadow: var(--shadow-lg);
-        }
-        .welcome-banner h2 { font-size: 28px; font-weight: 700; margin-bottom: 12px; }
-        .welcome-banner p { font-size: 15px; opacity: 0.95; max-width: 550px; margin: 0 auto 20px; line-height: 1.6; }
-        .plans-section { padding: 0 24px 24px; }
-        .section-title { text-align: center; margin-bottom: 24px; }
-        .section-title h2 { font-size: 26px; font-weight: 700; color: #f8fafc; margin-bottom: 6px; }
-        .section-title p { color: #94a3b8; font-size: 14px; }
-        .plans-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
-        .plan-card {
-            background: rgba(30, 41, 59, 0.75); border-radius: var(--radius-lg); padding: 24px;
-            box-shadow: var(--shadow-md); border: 1px solid rgba(255, 255, 255, 0.1); transition: var(--transition); position: relative; overflow: hidden;
-        }
-        .plan-card:hover { transform: translateY(-8px); border-color: var(--primary-light); background: rgba(30, 41, 59, 0.95); }
-        .plan-name { font-size: 20px; font-weight: 700; color: #f8fafc; margin-bottom: 6px; }
-        .plan-price { font-size: 28px; font-weight: 800; color: var(--primary-light); margin-bottom: 20px; }
-        .plan-feature { padding: 8px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.08); color: #cbd5e1; font-size: 13px; display: flex; align-items: center; gap: 10px; }
-        .plan-feature i { color: var(--success); width: 18px; }
-        .plan-btn {
-            width: 100%; padding: 12px; margin-top: 20px; background: linear-gradient(135deg, var(--primary), var(--accent));
-            color: white; border: none; border-radius: var(--radius-md); font-weight: 600; font-size: 14px; cursor: pointer; transition: var(--transition);
-        }
-        .files-section { padding: 0 24px 24px; }
-        .files-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; margin-top: 20px; }
-        .file-card { background: rgba(30, 41, 59, 0.8); border-radius: var(--radius-lg); padding: 16px; border: 1px solid rgba(255, 255, 255, 0.1); }
-        .file-name { font-size: 16px; font-weight: 600; color: #f8fafc; margin-bottom: 6px; word-break: break-word; }
-        .upload-area {
-            margin: 0 24px 24px; border: 3px dashed rgba(255, 255, 255, 0.2); border-radius: var(--radius-lg);
-            padding: 36px; text-align: center; background: rgba(30, 41, 59, 0.5); transition: var(--transition); cursor: pointer;
-        }
-        .upload-area:hover { border-color: var(--primary-light); background: rgba(30, 41, 59, 0.8); }
-        .file-input { display: none; }
-        .file-input-label {
-            background: linear-gradient(135deg, var(--primary), var(--accent)); color: white; padding: 10px 28px;
-            border-radius: var(--radius-md); font-weight: 600; font-size: 14px; cursor: pointer; display: inline-block;
-        }
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 16px; margin: 0 24px 24px; }
-        .stat-card { background: rgba(30, 41, 59, 0.8); border-radius: var(--radius-lg); padding: 20px; border: 1px solid rgba(255, 255, 255, 0.1); display: flex; align-items: center; gap: 12px; }
-        .stat-icon { width: 48px; height: 48px; background: linear-gradient(135deg, var(--primary), var(--accent)); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; color: white; font-size: 20px; }
-        .result-card { background: rgba(30, 41, 59, 0.85); margin: 0 24px 24px; border-radius: var(--radius-lg); padding: 24px; border: 1px solid rgba(255, 255, 255, 0.1); }
-        .result-url { background: rgba(15, 23, 42, 0.8); padding: 12px 20px; border-radius: var(--radius-md); font-family: monospace; font-size: 14px; color: var(--primary-light); word-break: break-all; margin: 16px 0; }
-        .admin-panel { background: rgba(30, 41, 59, 0.9); margin: 0 24px 24px; border-radius: var(--radius-lg); padding: 24px; border: 1px solid rgba(255, 255, 255, 0.15); }
-        .admin-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-top: 20px; }
-        .admin-btn { padding: 12px; border: none; border-radius: var(--radius-md); font-weight: 600; font-size: 13px; cursor: pointer; background: rgba(255, 255, 255, 0.05); color: #e2e8f0; border: 1px solid rgba(255, 255, 255, 0.1); }
-        .toast {
-            position: fixed; top: 20px; left: 20px; background: rgba(30, 41, 59, 0.95); color: white; padding: 12px 20px;
-            border-radius: var(--radius-md); box-shadow: var(--shadow-xl); display: flex; align-items: center; gap: 10px; z-index: 9999;
-            transform: translateX(150%); transition: transform 0.3s ease; border-right: 4px solid var(--success); min-width: 280px;
-        }
-        .toast.show { transform: translateX(0); }
-        .footer { background: rgba(30, 41, 59, 0.85); padding: 20px 24px; border-top: 1px solid rgba(255, 255, 255, 0.1); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
-    </style>
-</head>
-<body>
-    <div class="toast" id="toast"><div id="toastIcon"></div><div id="toastText">تمت العملية بنجاح</div></div>
+app = Flask(__name__, static_folder=BASE_DIR)
+app.secret_key = "ZIAD_HOST_GOLD_2026_SUPER_SECRET_KEY"
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
+app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
-    <div class="login-wrapper" id="loginContainer">
-        <div class="login-header"><h1>منصة ICO الخارقة</h1><p>بواسطة Y_20_20 | استضافة متكاملة (HTML, JS, PHP, Python)</p></div>
-        <div class="login-tabs">
-            <button class="login-tab active" data-tab="login"><i class="fas fa-sign-in-alt"></i> تسجيل الدخول</button>
-            <button class="login-tab" data-tab="register"><i class="fas fa-user-plus"></i> إنشاء حساب</button>
-        </div>
-        <div class="login-content">
-            <div id="loginForm">
-                <div class="form-group"><label class="form-label">اسم المستخدم</label><input type="text" id="loginUsername" class="form-input" placeholder="اسم المستخدم"></div>
-                <div class="form-group"><label class="form-label">كلمة المرور</label><input type="password" id="loginPassword" class="form-input" placeholder="كلمة المرور"></div>
-                <button class="btn btn-primary" id="loginSubmit" style="width: 100%;">دخول</button>
-                <button class="btn btn-outline" id="adminAccessBtn" style="margin-top: 16px; width: 100%;">دخول كأدمن</button>
-            </div>
-            <div id="registerForm" class="hidden">
-                <div class="form-group"><label class="form-label">اسم المستخدم (إنجليزي)</label><input type="text" id="registerUsername" class="form-input" placeholder="Username"></div>
-                <div class="form-group"><label class="form-label">كلمة المرور</label><input type="password" id="registerPassword" class="form-input" placeholder="Password"></div>
-                <button class="btn btn-primary" id="registerSubmit" style="width: 100%;">تسجيل حساب جديد</button>
-            </div>
-        </div>
-    </div>
+# ============== إعدادات البوت والإشعارات ==============
+BOT_TOKEN = "8107118673:AAG6xUifqFD5qtCWZMy_D9qEmC8HOCx4DBo"
+ADMIN_TELEGRAM_ID = 8091512031
 
-    <div class="app-wrapper hidden" id="mainContainer">
-        <nav class="navbar">
-            <div class="logo-area"><div class="logo-icon"><i class="fas fa-rocket"></i></div><div class="logo-text"><h1>Y_20_20</h1><p>منصة استضافة خارقة</p></div></div>
-            <div class="user-area">
-                <div class="user-badge" id="userNameDisplay"><i class="fas fa-user"></i> <span>زائر</span></div>
-                <button class="btn btn-outline" id="logoutBtn">خروج</button>
-            </div>
-        </nav>
-        <div class="dev-card">
-            <span class="dev-badge"><i class="fas fa-code"></i> المطور الرئيسي</span>
-            <div class="dev-links"><a href="https://t.me/Y_20_20" target="_blank" class="dev-link"><i class="fab fa-telegram"></i> @Y_20_20</a></div>
-        </div>
-        <div class="plans-section" id="plansSection">
-            <div class="section-title"><h2>اختر خطتك المثالية</h2><p>استضافة ملفات HTML, JS, PHP, Python بكفاءة عالية</p></div>
-            <div class="plans-grid" id="plansGrid"></div>
-        </div>
-        <div class="upload-area hidden" id="uploadArea">
-            <h3>رفع ملف جديد (HTML, JS, PHP, Python)</h3>
-            <label class="file-input-label"><i class="fas fa-folder-open"></i> اختر ملف<input type="file" id="fileInput" class="file-input"></label>
-            <div id="fileName" style="margin-top:10px; color:#818cf8;"></div>
-        </div>
-        <div style="padding:0 24px 24px;" class="hidden" id="actionButtonsContainer">
-            <button class="btn btn-primary" id="uploadBtn" style="width:100%;">رفع الملف وتشغيل السيرفر</button>
-        </div>
-        <div class="result-card hidden" id="resultSection">
-            <h3>رابط السيرفر:</h3>
-            <div class="result-url" id="urlDisplay"></div>
-            <button class="btn btn-primary" id="openBtn">فتح الموقع</button>
-        </div>
-    </div>
+def notify_admin(message: str):
+    """إرسال إشعار للأدمن على تليجرام"""
+    try:
+        requests.post(
+            f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
+            json={"chat_id": ADMIN_TELEGRAM_ID, "text": message, "parse_mode": "Markdown"},
+            timeout=3
+        )
+    except Exception:
+        pass
 
-    <script>
-        const E = {
-            loginContainer: document.getElementById('loginContainer'),
-            mainContainer: document.getElementById('mainContainer'),
-            loginSubmit: document.getElementById('loginSubmit'),
-            registerSubmit: document.getElementById('registerSubmit'),
-            loginUsername: document.getElementById('loginUsername'),
-            loginPassword: document.getElementById('loginPassword'),
-            registerUsername: document.getElementById('registerUsername'),
-            registerPassword: document.getElementById('registerPassword'),
-            userNameDisplay: document.getElementById('userNameDisplay').querySelector('span'),
-            logoutBtn: document.getElementById('logoutBtn'),
-            plansGrid: document.getElementById('plansGrid'),
-            uploadArea: document.getElementById('uploadArea'),
-            actionButtonsContainer: document.getElementById('actionButtonsContainer'),
-            fileInput: document.getElementById('fileInput'),
-            uploadBtn: document.getElementById('uploadBtn'),
-            resultSection: document.getElementById('resultSection'),
-            urlDisplay: document.getElementById('urlDisplay'),
-            openBtn: document.getElementById('openBtn'),
-            toast: document.getElementById('toast'),
-            toastText: document.getElementById('toastText')
-        };
+# ============== قاعدة البيانات ==============
+DB_FILE = os.path.join(BASE_DIR, "db.json")
 
-        function showToast(msg) {
-            E.toastText.textContent = msg;
-            E.toast.classList.add('show');
-            setTimeout(() => E.toast.classList.remove('show'), 3000);
-        }
+def load_db():
+    if os.path.exists(DB_FILE):
+        try:
+            with open(DB_FILE, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                if "plans" not in data:
+                    data["plans"] = {}
+                if "server_types" not in data:
+                    data["server_types"] = ["Python", "Node.js", "PHP", "HTML"]
+                return data
+        except Exception:
+            pass
+    
+    default_db = {
+        "users": {},
+        "servers": {},
+        "logs": [],
+        "plans": {
+            "free": {"name": "🎁 مجاني", "storage": 512000, "ram": 256, "cpu": 0.5, "max_servers": 2, "price": 0},
+            "4gb": {"name": "💎 4 جيجا", "storage": 4096000, "ram": 1024, "cpu": 1, "max_servers": 5, "price": 5},
+            "10gb": {"name": "💎 10 جيجا", "storage": 10240000, "ram": 2048, "cpu": 2, "max_servers": 10, "price": 10},
+            "40gb": {"name": "💎 40 جيجا", "storage": 40960000, "ram": 4096, "cpu": 4, "max_servers": 20, "price": 25}
+        },
+        "server_types": ["Python", "Node.js", "PHP", "HTML"]
+    }
+    save_db(default_db)
+    return default_db
 
-        let currentUser = null;
+def save_db(db_data):
+    try:
+        with open(DB_FILE, 'w', encoding='utf-8') as f:
+            json.dump(db_data, f, indent=4, ensure_ascii=False)
+        return True
+    except Exception as e:
+        print(f"❌ خطأ في حفظ DB: {e}")
+        return False
 
-        E.registerSubmit.addEventListener('click', async () => {
-            const u = E.registerUsername.value, p = E.registerPassword.value;
-            const res = await fetch('/api/register', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({username: u, password: p}) });
-            const data = await res.json();
-            if(data.success) { currentUser = u; E.userNameDisplay.textContent = u; E.loginContainer.classList.add('hidden'); E.mainContainer.classList.remove('hidden'); loadPlans(); showToast("تم التسجيل بنجاح"); }
-            else showToast(data.error);
-        });
+db = load_db()
 
-        E.loginSubmit.addEventListener('click', async () => {
-            const u = E.loginUsername.value, p = E.loginPassword.value;
-            const res = await fetch('/api/login', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({username: u, password: p}) });
-            const data = await res.json();
-            if(data.success) { currentUser = u; E.userNameDisplay.textContent = u; E.loginContainer.classList.add('hidden'); E.mainContainer.classList.remove('hidden'); loadPlans(); showToast("مرحباً بك"); }
-            else showToast(data.error);
-        });
+# ============== المنافذ ==============
+PORT_RANGE_START = 8100
+PORT_RANGE_END = 9100
 
-        async function loadPlans() {
-            E.plansGrid.innerHTML = `
-                <div class="plan-card">
-                    <div class="plan-name">الخطة المجانية</div>
-                    <div class="plan-price">مجاناً</div>
-                    <div class="plan-feature"><i class="fas fa-hdd"></i> المساحة: 5 جيجا</div>
-                    <button class="plan-btn" onclick="activatePlan('free')">تفعيل فوراً</button>
-                </div>
-            `;
-        }
+def get_assigned_port():
+    used = set()
+    for srv in db.get("servers", {}).values():
+        if srv.get("port"):
+            used.add(srv["port"])
+    for port in range(PORT_RANGE_START, PORT_RANGE_END):
+        if port not in used:
+            try:
+                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                s.settimeout(0.1)
+                result = s.connect_ex(('127.0.0.1', port))
+                s.close()
+                if result != 0:
+                    return port
+            except Exception:
+                return port
+    return PORT_RANGE_START
 
-        window.activatePlan = function(planKey) {
-            E.plansGrid.parentElement.classList.add('hidden');
-            E.uploadArea.classList.remove('hidden');
-            E.actionButtonsContainer.classList.remove('hidden');
-            showToast("تم تفعيل الخطة، ارفع ملفك الآن!");
-        }
+# ============== دوال مساعدة ==============
+def get_current_user():
+    if "email" in session:
+        return db["users"].get(session["email"])
+    return None
 
-        E.uploadBtn.addEventListener('click', async () => {
-            const file = E.fileInput.files[0];
-            if(!file) return showToast("اختر ملفاً أولاً");
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('username', currentUser);
+def get_user_servers_dir(email):
+    safe_email = email.replace('@', '_at_').replace('.', '_dot_')
+    path = os.path.join(USERS_DIR, safe_email, "SERVERS")
+    os.makedirs(path, exist_ok=True)
+    return path
 
-            const res = await fetch('/api/upload', { method: 'POST', body: formData });
-            const data = await res.json();
-            if(data.success) {
-                E.urlDisplay.textContent = data.url;
-                E.resultSection.classList.remove('hidden');
-                showToast("تم رفع الملف بنجاح!");
-            } else {
-                showToast("حدث خطأ أثناء الرفع");
-            }
-        });
+def is_admin(email):
+    u = db["users"].get(email)
+    return u.get("is_admin", False) if u else False
 
-        E.openBtn.addEventListener('click', () => {
-            window.open(E.urlDisplay.textContent, '_blank');
-        });
-    </script>
-</body>
-</html>
-"""
+def get_public_ip():
+    try:
+        return requests.get('https://api.ipify.org', timeout=3).text
+    except Exception:
+        return "127.0.0.1"
 
-# قواعد بيانات مؤقتة للذاكرة
-users_db = {}
-sites_db = {}
+def generate_api_key():
+    return secrets.token_urlsafe(32)
 
-@app.route('/')
-def index():
-    site_id = request.args.get('site')
-    if site_id and site_id in sites_db:
-        return render_template_string(sites_db[site_id]['content'])
-    return render_template_string(INDEX_HTML)
+def get_user_by_api_key(api_key):
+    for email, udata in db["users"].items():
+        if udata.get("api_key") == api_key:
+            return email, udata
+    return None, None
 
+def uptime_str(start_time):
+    if not start_time:
+        return "0 ثانية"
+    diff = time.time() - start_time
+    days = int(diff // 86400)
+    hours = int((diff % 86400) // 3600)
+    mins = int((diff % 3600) // 60)
+    parts = []
+    if days > 0: parts.append(f"{days} يوم")
+    if hours > 0: parts.append(f"{hours} ساعة")
+    if mins > 0: parts.append(f"{mins} دقيقة")
+    return " و ".join(parts) if parts else "أقل من دقيقة"
+
+def _check_admin_access():
+    if "email" in session and is_admin(session["email"]):
+        return True
+    api_key = None
+    if request.is_json:
+        try:
+            api_key = request.get_json().get("api_key")
+        except Exception:
+            pass
+    if not api_key:
+        api_key = request.args.get("api_key")
+    if api_key:
+        email, user = get_user_by_api_key(api_key)
+        if email and is_admin(email):
+            return True
+    return False
+
+# ============== اكتشاف ملفات التشغيل الداعمة (.html, .htm, .js, .php, .py) ==============
+def detect_main_file(srv_path: str) -> str:
+    candidates = ["index.html", "index.htm", "main.py", "bot.py", "app.py", "index.js", "server.js", "index.php"]
+    for candidate in candidates:
+        if os.path.exists(os.path.join(srv_path, candidate)):
+            return candidate
+    all_files = [f for f in os.listdir(srv_path) if f.lower().endswith(('.html', '.htm', '.js', '.php', '.py'))]
+    return all_files[0] if all_files else ""
+
+def auto_install_deps(srv_path: str, log_file):
+    try:
+        req = os.path.join(srv_path, "requirements.txt")
+        if os.path.exists(req):
+            log_file.write(f"\n📦 تثبيت requirements.txt...\n")
+            log_file.flush()
+            proc = subprocess.Popen(
+                [sys.executable, "-m", "pip", "install", "-r", "requirements.txt"],
+                cwd=srv_path,
+                stdout=log_file,
+                stderr=subprocess.STDOUT,
+                env=os.environ.copy()
+            )
+            proc.wait(timeout=180)
+            log_file.write("✅ تم تثبيت المكتبات\n")
+    except Exception as e:
+        log_file.write(f"\n⚠️ تثبيت تلقائي: {e}\n")
+    log_file.flush()
+
+def auto_install_node_deps(srv_path: str, log_file):
+    try:
+        package_json = os.path.join(srv_path, "package.json")
+        if os.path.exists(package_json):
+            log_file.write(f"\n📦 تثبيت حزم Node.js...\n")
+            log_file.flush()
+            proc = subprocess.Popen(
+                ["npm", "install"],
+                cwd=srv_path,
+                stdout=log_file,
+                stderr=subprocess.STDOUT,
+                env=os.environ.copy()
+            )
+            proc.wait(timeout=180)
+            log_file.write("✅ تم تثبيت حزم Node.js\n")
+    except Exception as e:
+        log_file.write(f"\n⚠️ تثبيت تلقائي Node.js فشل: {e}\n")
+    log_file.flush()
+
+# ============== تشغيل السيرفر حسب النوع ==============
+def start_server_process(folder):
+    srv = db["servers"].get(folder)
+    if not srv:
+        return False, "السيرفر غير موجود"
+
+    server_type = srv.get("server_type", "Python")
+    
+    if server_type == "Node.js":
+        return start_node_server_process(folder)
+    elif server_type == "PHP":
+        return start_php_server_process(folder)
+    elif server_type == "HTML":
+        return start_html_server_process(folder)
+    else:
+        return start_python_server_process(folder)
+
+def start_python_server_process(folder):
+    srv = db["servers"].get(folder)
+    main_file = srv.get("startup_file", "") or detect_main_file(srv["path"])
+    if not main_file:
+        return False, "لا يوجد ملف تشغيل مدعوم (.py, .js, .html, .php)"
+    
+    srv["startup_file"] = main_file
+    save_db(db)
+
+    port = srv.get("port") or get_assigned_port()
+    srv["port"] = port
+    save_db(db)
+
+    log_path = os.path.join(srv["path"], "out.log")
+    error_path = os.path.join(srv["path"], "errors.log")
+    log_file = open(log_path, "a", encoding='utf-8')
+    log_file.write(f"\n{'='*50}\n🚀 بدء التشغيل (Python) - {datetime.now()}\n📁 {main_file}\n🔌 المنفذ: {port}\n{'='*50}\n\n")
+    log_file.flush()
+
+    try:
+        env = os.environ.copy()
+        env["PORT"] = str(port)
+        cmd = [sys.executable, "-u", main_file]
+        proc = subprocess.Popen(cmd, cwd=srv["path"], stdout=log_file, stderr=open(error_path, "a", encoding='utf-8'), env=env, preexec_fn=os.setsid if hasattr(os, 'setsid') else None)
+        srv["status"] = "Running"
+        srv["pid"] = proc.pid
+        srv["start_time"] = time.time()
+        save_db(db)
+        return True, "✅ تم التشغيل"
+    except Exception as e:
+        return False, str(e)
+
+def start_node_server_process(folder):
+    srv = db["servers"].get(folder)
+    main_file = srv.get("startup_file", "") or detect_main_file(srv["path"])
+    if not main_file:
+        return False, "لا يوجد ملف تشغيل مدعوم"
+    
+    srv["startup_file"] = main_file
+    port = srv.get("port") or get_assigned_port()
+    srv["port"] = port
+    save_db(db)
+
+    log_path = os.path.join(srv["path"], "out.log")
+    error_path = os.path.join(srv["path"], "errors.log")
+    log_file = open(log_path, "a", encoding='utf-8')
+    log_file.write(f"\n{'='*50}\n🚀 بدء التشغيل (Node.js) - {datetime.now()}\n📁 {main_file}\n🔌 المنفذ: {port}\n{'='*50}\n\n")
+    log_file.flush()
+
+    try:
+        env = os.environ.copy()
+        env["PORT"] = str(port)
+        cmd = ["node", main_file]
+        proc = subprocess.Popen(cmd, cwd=srv["path"], stdout=log_file, stderr=open(error_path, "a", encoding='utf-8'), env=env, preexec_fn=os.setsid if hasattr(os, 'setsid') else None)
+        srv["status"] = "Running"
+        srv["pid"] = proc.pid
+        srv["start_time"] = time.time()
+        save_db(db)
+        return True, "✅ تم التشغيل"
+    except Exception as e:
+        return False, str(e)
+
+def start_php_server_process(folder):
+    srv = db["servers"].get(folder)
+    port = srv.get("port") or get_assigned_port()
+    srv["port"] = port
+    save_db(db)
+
+    log_path = os.path.join(srv["path"], "out.log")
+    error_path = os.path.join(srv["path"], "errors.log")
+    log_file = open(log_path, "a", encoding='utf-8')
+    
+    try:
+        cmd = ["php", "-S", f"127.0.0.1:{port}"]
+        proc = subprocess.Popen(cmd, cwd=srv["path"], stdout=log_file, stderr=open(error_path, "a", encoding='utf-8'), preexec_fn=os.setsid if hasattr(os, 'setsid') else None)
+        srv["status"] = "Running"
+        srv["pid"] = proc.pid
+        srv["start_time"] = time.time()
+        save_db(db)
+        return True, "✅ تم تشغيل خادم PHP"
+    except Exception as e:
+        return False, f"فشل تشغيل PHP: {e}"
+
+def start_html_server_process(folder):
+    srv = db["servers"].get(folder)
+    port = srv.get("port") or get_assigned_port()
+    srv["port"] = port
+    save_db(db)
+
+    log_path = os.path.join(srv["path"], "out.log")
+    log_file = open(log_path, "a", encoding='utf-8')
+    
+    try:
+        cmd = [sys.executable, "-m", "http.server", str(port)]
+        proc = subprocess.Popen(cmd, cwd=srv["path"], stdout=log_file, stderr=subprocess.STDOUT, preexec_fn=os.setsid if hasattr(os, 'setsid') else None)
+        srv["status"] = "Running"
+        srv["pid"] = proc.pid
+        srv["start_time"] = time.time()
+        save_db(db)
+        return True, "✅ تم تشغيل خادم Static HTML"
+    except Exception as e:
+        return False, str(e)
+
+def stop_server_process(folder):
+    srv = db["servers"].get(folder)
+    if not srv:
+        return
+    if srv.get("pid"):
+        try:
+            p = psutil.Process(srv["pid"])
+            if hasattr(os, 'killpg'):
+                try:
+                    os.killpg(os.getpgid(p.pid), signal.SIGTERM)
+                except Exception:
+                    pass
+            for child in p.children(recursive=True):
+                child.kill()
+            p.kill()
+        except Exception:
+            pass
+    srv["status"] = "Stopped"
+    srv["pid"] = None
+    save_db(db)
+
+def restart_server(folder):
+    stop_server_process(folder)
+    time.sleep(2)
+    start_server_process(folder)
+
+# ============== مراقبة العمليات ==============
+def process_monitor():
+    while True:
+        try:
+            for folder, srv in list(db["servers"].items()):
+                if srv.get("status") == "Running" and srv.get("pid"):
+                    try:
+                        p = psutil.Process(srv["pid"])
+                        if not p.is_running() or p.status() == psutil.STATUS_ZOMBIE:
+                            restart_server(folder)
+                    except psutil.NoSuchProcess:
+                        restart_server(folder)
+                    except Exception:
+                        pass
+        except Exception:
+            pass
+        time.sleep(15)
+
+threading.Thread(target=process_monitor, daemon=True).start()
+
+# ============== الصفحات المطلوبة فقط ==============
+@app.route('/dashboard')
+def dashboard():
+    if 'email' not in session:
+        return redirect('/login')
+    return send_from_directory(BASE_DIR, 'index.html')
+
+
+
+# ============== API المصادقة ==============
 @app.route('/api/register', methods=['POST'])
-def register():
-    data = request.json
-    username = data.get('username')
-    password = data.get('password')
-    if not username or not password:
-        return jsonify({'success': False, 'error': 'أدخل بيانات صحيحة'})
-    if username in users_db:
-        return jsonify({'success': False, 'error': 'المستخدم موجود مسبقاً'})
-    users_db[username] = {'password': password}
-    return jsonify({'success': True})
+def api_register():
+    data = request.get_json()
+    email = data.get("email", "").strip().lower()
+    password = data.get("password", "").strip()
+    
+    if not email or not password:
+        return jsonify({"success": False, "message": "جميع الحقول مطلوبة"})
+    if '@' not in email or '.' not in email:
+        return jsonify({"success": False, "message": "البريد الإلكتروني غير صالح"})
+    if len(password) < 4:
+        return jsonify({"success": False, "message": "كلمة المرور 4 أحرف على الأقل"})
+    if email in db["users"]:
+        return jsonify({"success": False, "message": "البريد الإلكتروني موجود بالفعل"})
+
+    is_first_user = len(db["users"]) == 0
+
+    db["users"][email] = {
+        "password": hashlib.sha256(password.encode()).hexdigest(),
+        "is_admin": is_first_user,
+        "created_at": str(datetime.now()),
+        "max_servers": 999999 if is_first_user else db["plans"]["free"]["max_servers"],
+        "expiry_days": 3650 if is_first_user else 365,
+        "last_login": None,
+        "telegram_id": None,
+        "api_key": None,
+        "storage_limit": 102400 if is_first_user else db["plans"]["free"]["storage"],
+        "plan": "admin" if is_first_user else "free"
+    }
+    save_db(db)
+    
+    safe_email = email.replace('@', '_at_').replace('.', '_dot_')
+    user_dir = os.path.join(USERS_DIR, safe_email)
+    os.makedirs(user_dir, exist_ok=True)
+    os.makedirs(os.path.join(user_dir, "SERVERS"), exist_ok=True)
+
+    threading.Thread(target=notify_admin, args=(f"🔔 *مستخدم جديد!*\n📧 {email}",), daemon=True).start()
+
+    return jsonify({"success": True, "message": "✅ تم إنشاء حسابك بنجاح!"})
 
 @app.route('/api/login', methods=['POST'])
-def login():
-    data = request.json
-    username = data.get('username')
-    password = data.get('password')
-    if username in users_db and users_db[username]['password'] == password:
-        return jsonify({'success': True})
-    return jsonify({'success': False, 'error': 'بيانات الدخول غير صحيحة'})
+def api_login():
+    data = request.get_json()
+    email = data.get("email", "").strip().lower()
+    password = data.get("password", "").strip()
 
-@app.route('/api/upload', methods=['POST'])
-def upload():
-    file = request.files.get('file')
-    username = request.form.get('username')
-    if not file:
-        return jsonify({'success': False})
-    
-    filename = file.filename
-    content = file.read().decode('utf-8', errors='ignore')
-    site_id = f"site_{abs(hash(filename + username))}"
-    
-    # دعم عرض محتوى الملفات المرفوعة
-    formatted_content = f"""
-    <!DOCTYPE html>
-    <html lang="ar" dir="rtl">
-    <head><meta charset="UTF-8"><title>{filename}</title>
-    <style>body{{background:#0f172a;color:#fff;font-family:Tahoma;padding:30px;text-align:center;}}pre{{background:#1e293b;padding:20px;border-radius:10px;text-align:left;direction:ltr;color:#38bdf8;overflow:auto;max-width:800px;margin:20px auto;}}</style>
-    </head>
-    <body>
-        <h1>⚡ تم تشغيل ملفك بنجاح على استضافة ICO</h1>
-        <p>اسم الملف المرفوع: <b>{filename}</b></p>
-        <pre>{content}</pre>
-    </body>
-    </html>
-    """
-    
-    sites_db[site_id] = {'content': formatted_content, 'owner': username}
-    full_url = f"{request.host_url}?site={site_id}"
-    return jsonify({'success': True, 'url': full_url})
+    user = db["users"].get(email)
+    if user and user["password"] == hashlib.sha256(password.encode()).hexdigest():
+        session.clear()
+        session['email'] = email
+        session.permanent = True
+        user["last_login"] = str(datetime.now())
+        save_db(db)
+        return jsonify({"success": True, "redirect": "/dashboard", "is_admin": user.get("is_admin", False)})
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+    return jsonify({"success": False, "message": "بيانات غير صحيحة"})
+
+@app.route('/api/logout', methods=['GET', 'POST'])
+def api_logout():
+    session.clear()
+    return jsonify({"success": True})
+
+@app.route('/api/current_user')
+def api_current_user():
+    if "email" in session:
+        u = db["users"].get(session["email"])
+        if u:
+            return jsonify({
+                "success": True,
+                "email": session["email"],
+                "is_admin": u.get("is_admin", False),
+                "plan": u.get("plan", "free")
+            })
+    return jsonify({"success": False})
+
+# ============== API Key ==============
+@app.route('/api/create_api_key', methods=['POST'])
+def create_api_key():
+    if 'email' not in session:
+        return jsonify({"success": False, "message": "غير مصرح"}), 401
+    email = session['email']
+    new_key = generate_api_key()
+    db["users"][email]["api_key"] = new_key
+    save_db(db)
+    return jsonify({"success": True, "api_key": new_key})
+
+# ============== API الخطط ==============
+@app.route('/api/plans')
+def get_plans():
+    return jsonify({"success": True, "plans": db.get("plans", {})})
+
+@app.route('/api/user/upgrade', methods=['POST'])
+def upgrade_plan():
+    if 'email' not in session:
+        return jsonify({"success": False, "message": "غير مصرح"}), 401
+    data = request.get_json()
+    plan_id = data.get("plan_id")
+    if not plan_id or plan_id not in db.get("plans", {}):
+        return jsonify({"success": False, "message": "خطة غير موجودة"})
+    
+    plan = db["plans"][plan_id]
+    email = session['email']
+    user = db["users"][email]
+    
+    user["plan"] = plan_id
+    user["max_servers"] = plan["max_servers"]
+    user["storage_limit"] = plan["storage"]
+    save_db(db)
+    
+    return jsonify({"success": True, "message": f"✅ تم ترقية حسابك إلى {plan['name']}"})
+
+# ============== API الإدارة ==============
+@app.route('/api/admin/users')
+def admin_users():
+    if not _check_admin_access():
+        return jsonify({"success": False}), 403
+    users_list = []
+    for uemail, udata in db["users"].items():
+        users_list.append({
+            "email": uemail,
+            "is_admin": udata.get("is_admin", False),
+            "created_at": udata.get("created_at"),
+            "max_servers": udata.get("max_servers", 1),
+            "plan": udata.get("plan", "free")
+        })
+    return jsonify({"success": True, "users": users_list})
+
+@app.route('/api/admin/create-user', methods=['POST'])
+def admin_create_user():
+    if not _check_admin_access():
+        return jsonify({"success": False}), 403
+    data = request.get_json()
+    email = data.get("email", "").strip().lower()
+    password = data.get("password", "").strip()
+    max_servers = int(data.get("max_servers", 2))
+    
+    if email in db["users"]:
+        return jsonify({"success": False, "message": "المستخدم موجود"})
+    
+    db["users"][email] = {
+        "password": hashlib.sha256(password.encode()).hexdigest(),
+        "is_admin": False,
+        "created_at": str(datetime.now()),
+        "max_servers": max_servers,
+        "expiry_days": 365,
+        "last_login": None,
+        "telegram_id": None,
+        "api_key": None,
+        "storage_limit": 512000,
+        "plan": "free"
+    }
+    save_db(db)
+    return jsonify({"success": True, "message": "✅ تم إنشاء الحساب"})
+
+@app.route('/api/admin/delete-user', methods=['POST'])
+def admin_delete_user():
+    if not _check_admin_access():
+        return jsonify({"success": False}), 403
+    data = request.get_json()
+    email = data.get("email", "").strip().lower()
+    
+    if email in db["users"]:
+        for fid, srv in list(db["servers"].items()):
+            if srv["owner"] == email:
+                stop_server_process(fid)
+                if os.path.exists(srv["path"]):
+                    shutil.rmtree(srv["path"], ignore_errors=True)
+                del db["servers"][fid]
+        
+        del db["users"][email]
+        save_db(db)
+        return jsonify({"success": True, "message": f"🗑 تم حذف المستخدم"})
+    return jsonify({"success": False, "message": "المستخدم غير موجود"})
+
+# ============== API النظام ==============
+@app.route('/api/system/metrics')
+def get_metrics():
+    return jsonify({
+        "cpu": psutil.cpu_percent(),
+        "memory": psutil.virtual_memory().percent,
+        "disk": psutil.disk_usage('/').percent
+    })
+
+# ============== السيرفرات ==============
+@app.route('/api/servers')
+def list_servers():
+    if "email" not in session:
+        return jsonify({"success": False}), 401
+    
+    user_servers = []
+    total_disk_used_mb = 0.0
+    for folder, srv in db["servers"].items():
+        if srv["owner"] == session["email"]:
+            disk_used = 0
+            if os.path.exists(srv["path"]):
+                try:
+                    for root, dirs, files in os.walk(srv["path"]):
+                        for f in files:
+                            fp = os.path.join(root, f)
+                            try:
+                                disk_used += os.path.getsize(fp)
+                            except Exception:
+                                pass
+                except Exception:
+                    pass
+            disk_used_mb = round(disk_used / (1024 * 1024), 2)
+            total_disk_used_mb += disk_used_mb
+            user_servers.append({
+                "folder": folder,
+                "title": srv["name"],
+                "server_type": srv.get("server_type", "Python"),
+                "status": srv.get("status", "Stopped"),
+                "uptime": uptime_str(srv.get("start_time")) if srv.get("status") == "Running" else "0 ثانية",
+                "port": srv.get("port", "N/A"),
+                "plan": srv.get("plan", "free"),
+                "storage_limit": srv.get("storage_limit", 512000),
+                "ram_limit": srv.get("ram_limit", 256),
+                "cpu_limit": srv.get("cpu_limit", 0.5),
+                "disk_used": disk_used_mb
+            })
+    user = db["users"].get(session["email"], {})
+    return jsonify({
+        "success": True,
+        "servers": user_servers,
+        "stats": {
+            "used": len(user_servers),
+            "total": user.get("max_servers", 2),
+            "expiry": user.get("expiry_days", 365),
+            "disk_used": round(total_disk_used_mb, 2),
+            "disk_total": user.get("storage_limit", 512000),
+        }
+    })
+
+@app.route('/api/server/add', methods=['POST'])
+def add_server():
+    if "email" not in session:
+        return jsonify({"success": False, "message": "غير مصرح"}), 401
+    
+    user = db["users"].get(session["email"])
+    if not user:
+        return jsonify({"success": False, "message": "مستخدم غير موجود"})
+    
+    user_srv_count = len([s for s in db["servers"].values() if s["owner"] == session["email"]])
+    if user_srv_count >= user.get("max_servers", 2):
+        return jsonify({"success": False, "message": f"وصلت للحد الأقصى ({user.get('max_servers', 2)}) سيرفر"})
+    
+    data = request.get_json()
+    name = data.get("name", "").strip()
+    server_type = data.get("server_type", "Python")
+    
+    if not name:
+        return jsonify({"success": False, "message": "الرجاء إدخال اسم للسيرفر"})
+    
+    plan_id = user.get("plan", "free")
+    plan = db["plans"].get(plan_id, db["plans"]["free"])
+    
+    safe_email = session['email'].replace('@', '_at_').replace('.', '_dot_')
+    folder = f"{safe_email}_{re.sub(r'[^a-zA-Z0-9]', '', name)}_{int(time.time())}"
+    path = os.path.join(get_user_servers_dir(session["email"]), folder)
+    os.makedirs(path, exist_ok=True)
+    assigned_port = get_assigned_port()
+    
+    db["servers"][folder] = {
+        "name": name,
+        "owner": session["email"],
+        "path": path,
+        "server_type": server_type,
+        "status": "Stopped",
+        "created_at": str(datetime.now()),
+        "startup_file": "",
+        "pid": None,
+        "port": assigned_port,
+        "plan": plan_id,
+        "storage_limit": plan["storage"],
+        "ram_limit": plan["ram"],
+        "cpu_limit": plan["cpu"]
+    }
+    save_db(db)
+    return jsonify({"success": True, "message": f"✅ تم إنشاء {server_type} سيرفر: {name}"})
+
+@app.route('/api/server/action/<folder>/<action>', methods=['POST'])
+def server_action(folder, action):
+    if "email" not in session:
+        return jsonify({"success": False}), 401
+    srv = db["servers"].get(folder)
+    if not srv or srv["owner"] != session["email"]:
+        return jsonify({"success": False, "message": "غير مصرح"})
+    
+    if action == "start":
+        if srv.get("status") == "Running":
+            return jsonify({"success": False, "message": "الخادم يعمل بالفعل"})
+        ok, msg = start_server_process(folder)
+        return jsonify({"success": ok, "message": msg})
+    elif action == "stop":
+        stop_server_process(folder)
+        return jsonify({"success": True, "message": "🛑 تم الإيقاف"})
+    elif action == "restart":
+        restart_server(folder)
+        return jsonify({"success": True, "message": "🔄 تم إعادة التشغيل"})
+    elif action == "delete":
+        stop_server_process(folder)
+        if os.path.exists(srv["path"]):
+            shutil.rmtree(srv["path"], ignore_errors=True)
+        del db["servers"][folder]
+        save_db(db)
+        return jsonify({"success": True, "message": "🗑 تم الحذف"})
+    return jsonify({"success": False})
+
+@app.route('/api/server/stats/<folder>')
+def get_server_stats(folder):
+    if "email" not in session:
+        return jsonify({"success": False}), 401
+    srv = db["servers"].get(folder)
+    if not srv or srv["owner"] != session["email"]:
+        return jsonify({"success": False})
+    
+    status = srv.get("status", "Stopped")
+    logs = "لا توجد مخرجات بعد"
+    log_path = os.path.join(srv["path"], "out.log")
+    if os.path.exists(log_path):
+        try:
+            with open(log_path, 'r', encoding='utf-8', errors='ignore') as f:
+                lines = f.read().split('\n')
+                logs = '\n'.join(lines[-500:])
+        except Exception:
+            pass
+    
+    mem_info = "0 MB"
+    if srv.get("pid") and status == "Running":
+        try:
+            p = psutil.Process(srv["pid"])
+            mem_info = f"{p.memory_info().rss / (1024*1024):.1f} MB"
+        except Exception:
+            pass
+    
+    return jsonify({
+        "success": True,
+        "status": status,
+        "logs": logs,
+        "mem": mem_info,
+        "uptime": uptime_str(srv.get("start_time")) if status == "Running" else "0 ثانية",
+        "port": srv.get("port", "--"),
+        "ip": get_public_ip(),
+        "server_type": srv.get("server_type", "Python")
+    })
+
+# ============== الملفات (دعم .html, .htm, .js, .php, .py) ==============
+@app.route('/api/files/list/<folder>')
+def list_server_files(folder):
+    if "email" not in session:
+        return jsonify([]), 401
+    srv = db["servers"].get(folder)
+    if not srv or srv["owner"] != session["email"]:
+        return jsonify([])
+    
+    path = srv["path"]
+    files = []
+    try:
+        for f in os.listdir(path):
+            if f in ['out.log', 'server.log', 'meta.json', 'errors.log']:
+                continue
+            fpath = os.path.join(path, f)
+            stat = os.stat(fpath)
+            size_bytes = stat.st_size
+            if size_bytes < 1024:
+                size_str = f"{size_bytes} B"
+            elif size_bytes < 1024 * 1024:
+                size_str = f"{size_bytes/1024:.1f} KB"
+            else:
+                size_str = f"{size_bytes/(1024*1024):.1f} MB"
+            files.append({
+                "name": f,
+                "size": size_str,
+                "is_dir": os.path.isdir(fpath),
+                "modified": datetime.fromtimestamp(stat.st_mtime).strftime('%Y-%m-%d %H:%M'),
+                "is_zip": f.lower().endswith('.zip')
+            })
+    except Exception:
+        pass
+    return jsonify(sorted(files, key=lambda x: (not x['is_dir'], x['name'].lower())))
+
+@app.route('/api/files/content/<folder>/<path:filename>')
+def get_file_content(folder, filename):
+    if "email" not in session:
+        return jsonify({"content": ""}), 401
+    srv = db["servers"].get(folder)
+    if not srv or srv["owner"] != session["email"]:
+        return jsonify({"content": ""})
+    if '..' in filename:
+        return jsonify({"content": ""})
+    
+    fpath = os.path.join(srv["path"], filename)
+    if not os.path.exists(fpath) or os.path.isdir(fpath):
+        return jsonify({"content": ""})
+    try:
+        with open(fpath, 'r', encoding='utf-8', errors='replace') as f:
+            return jsonify({"content": f.read()})
+    except Exception:
+        return jsonify({"content": "[ملف ثنائي]"})
+
+@app.route('/api/files/save/<folder>/<path:filename>', methods=['POST'])
+def save_file_content(folder, filename):
+    if "email" not in session:
+        return jsonify({"success": False}), 401
+    srv = db["servers"].get(folder)
+    if not srv or srv["owner"] != session["email"]:
+        return jsonify({"success": False})
+    if '..' in filename:
+        return jsonify({"success": False})
+    
+    data = request.get_json()
+    fpath = os.path.join(srv["path"], filename)
+    try:
+        with open(fpath, 'w', encoding='utf-8') as f:
+            f.write(data.get("content", ""))
+        return jsonify({"success": True, "message": "✅ تم الحفظ"})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)})
+
+@app.route('/api/files/upload/<folder>', methods=['POST'])
+def upload_files(folder):
+    if "email" not in session:
+        return jsonify({"success": False}), 401
+    srv = db["servers"].get(folder)
+    if not srv or srv["owner"] != session["email"]:
+        return jsonify({"success": False})
+    
+    files = request.files.getlist('files[]')
+    uploaded = 0
+    for f in files:
+        try:
+            if f and f.filename and '..' not in f.filename:
+                save_path = os.path.join(srv["path"], f.filename)
+                f.save(save_path)
+                uploaded += 1
+        except Exception:
+            pass
+    
+    if uploaded > 0:
+        stype = srv.get("server_type")
+        if stype == "Node.js":
+            threading.Thread(target=auto_install_node_deps, args=(srv["path"], open(os.path.join(srv["path"], "out.log"), "a", encoding='utf-8')), daemon=True).start()
+        elif stype == "Python":
+            threading.Thread(target=auto_install_deps, args=(srv["path"], open(os.path.join(srv["path"], "out.log"), "a", encoding='utf-8')), daemon=True).start()
+        return jsonify({"success": True, "message": f"✅ تم رفع {uploaded} ملف بنجاح"})
+    return jsonify({"success": False, "message": "فشل الرفع"})
+
+@app.route('/api/files/delete/<folder>', methods=['POST'])
+def delete_files(folder):
+    if "email" not in session:
+        return jsonify({"success": False}), 401
+    srv = db["servers"].get(folder)
+    if not srv or srv["owner"] != session["email"]:
+        return jsonify({"success": False})
+    
+    data = request.get_json() or {}
+    names = data.get("names", data.get("name", []))
+    if isinstance(names, str):
+        names = [names]
+    
+    deleted = 0
+    for name in names:
+        if name and '..' not in name:
+            fpath = os.path.join(srv["path"], name)
+            try:
+                if os.path.isdir(fpath):
+                    shutil.rmtree(fpath)
+                elif os.path.exists(fpath):
+                    os.remove(fpath)
+                deleted += 1
+            except Exception:
+                pass
+    return jsonify({"success": True, "message": f"🗑 تم حذف {deleted} ملف"})
+
+@app.route('/api/files/create/<folder>', methods=['POST'])
+def create_file_api(folder):
+    if "email" not in session:
+        return jsonify({"success": False}), 401
+    srv = db["servers"].get(folder)
+    if not srv or srv["owner"] != session["email"]:
+        return jsonify({"success": False})
+    
+    data = request.get_json()
+    filename = data.get("filename", "").strip()
+    if not filename or '..' in filename:
+        return jsonify({"success": False})
+    
+    fpath = os.path.join(srv["path"], filename)
+    try:
+        with open(fpath, 'w', encoding='utf-8') as f:
+            f.write(data.get("content", ""))
+        return jsonify({"success": True, "message": f"✅ تم إنشاء {filename}"})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)})
+
+@app.route('/api/files/rename/<folder>', methods=['POST'])
+def rename_file(folder):
+    if "email" not in session:
+        return jsonify({"success": False}), 401
+    srv = db["servers"].get(folder)
+    if not srv or srv["owner"] != session["email"]:
+        return jsonify({"success": False})
+    
+    data = request.get_json()
+    old_name = data.get("old_name", "").strip()
+    new_name = data.get("new_name", "").strip()
+    if '..' in old_name or '..' in new_name:
+        return jsonify({"success": False})
+    
+    old_path = os.path.join(srv["path"], old_name)
+    new_path = os.path.join(srv["path"], new_name)
+    if not os.path.exists(old_path):
+        return jsonify({"success": False})
+    try:
+        os.rename(old_path, new_path)
+        return jsonify({"success": True, "message": f"✅ تم تغيير الاسم"})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)})
+
+@app.route('/api/files/unzip/<folder>/<path:filename>', methods=['POST'])
+def unzip_file(folder, filename):
+    if "email" not in session:
+        return jsonify({"success": False}), 401
+    srv = db["servers"].get(folder)
+    if not srv or srv["owner"] != session["email"]:
+        return jsonify({"success": False})
+    
+    zip_path = os.path.join(srv["path"], filename)
+    if not os.path.exists(zip_path):
+        return jsonify({"success": False})
+    try:
+        with zipfile.ZipFile(zip_path, 'r') as zf:
+            zf.extractall(srv["path"])
+        return jsonify({"success": True, "message": f"✅ تم فك الضغط"})
+    except Exception:
+        return jsonify({"success": False, "message": "فشل فك الضغط"})
+
+@app.route('/api/server/set-startup/<folder>', methods=['POST'])
+def set_startup_file(folder):
+    if "email" not in session:
+        return jsonify({"success": False}), 401
+    srv = db["servers"].get(folder)
+    if not srv or srv["owner"] != session["email"]:
+        return jsonify({"success": False})
+    
+    data = request.get_json()
+    filename = data.get("filename", "").strip()
+    if not filename or '..' in filename:
+        return jsonify({"success": False})
+    
+    srv["startup_file"] = filename
+    save_db(db)
+    return jsonify({"success": True, "message": f"✅ تم تعيين {filename}"})
+
+# ============== API البوت ==============
+@app.route('/api/bot/verify', methods=['POST'])
+def bot_verify():
+    data = request.get_json()
+    api_key = data.get('api_key', '').strip()
+    if not api_key:
+        return jsonify({"success": False})
+    email, user = get_user_by_api_key(api_key)
+    if not email:
+        return jsonify({"success": False})
+    return jsonify({
+        "success": True,
+        "email": email,
+        "is_admin": is_admin(email),
+        "max_servers": user.get("max_servers", 2)
+    })
+
+@app.route('/api/bot/servers', methods=['GET'])
+def bot_list_servers():
+    api_key = request.args.get('api_key')
+    if not api_key:
+        return jsonify({"success": False}), 401
+    email, _ = get_user_by_api_key(api_key)
+    if not email:
+        return jsonify({"success": False}), 401
+    
+    user_servers = []
+    for folder, srv in db["servers"].items():
+        if srv["owner"] == email:
+            user_servers.append({
+                "folder": folder,
+                "title": srv["name"],
+                "status": srv.get("status", "Stopped"),
+                "port": srv.get("port", "N/A"),
+                "server_type": srv.get("server_type", "Python")
+            })
+    return jsonify({"success": True, "servers": user_servers})
+
+@app.route('/api/bot/server/action', methods=['POST'])
+def bot_server_action():
+    data = request.get_json()
+    api_key = data.get('api_key')
+    folder = data.get('folder')
+    action = data.get('action')
+    if not all([api_key, folder, action]):
+        return jsonify({"success": False}), 400
+    email, _ = get_user_by_api_key(api_key)
+    if not email:
+        return jsonify({"success": False}), 401
+    srv = db["servers"].get(folder)
+    if not srv or srv["owner"] != email:
+        return jsonify({"success": False}), 403
+    
+    if action == "start":
+        ok, msg = start_server_process(folder)
+        return jsonify({"success": ok, "message": msg})
+    elif action == "stop":
+        stop_server_process(folder)
+        return jsonify({"success": True})
+    elif action == "restart":
+        restart_server(folder)
+        return jsonify({"success": True})
+    return jsonify({"success": False})
+
+@app.route('/api/bot/console', methods=['GET'])
+def bot_console():
+    api_key = request.args.get('api_key')
+    folder = request.args.get('folder')
+    if not api_key or not folder:
+        return jsonify({"success": False}), 400
+    email, _ = get_user_by_api_key(api_key)
+    if not email:
+        return jsonify({"success": False}), 401
+    srv = db["servers"].get(folder)
+    if not srv or srv["owner"] != email:
+        return jsonify({"success": False}), 403
+    
+    log_path = os.path.join(srv["path"], "out.log")
+    logs = ""
+    if os.path.exists(log_path):
+        try:
+            with open(log_path, 'r', encoding='utf-8', errors='ignore') as f:
+                logs = f.read()[-3000:]
+        except Exception:
+            pass
+    return jsonify({"success": True, "logs": logs})
+
+# ============== التشغيل ==============
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=False, threaded=True)
