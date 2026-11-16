@@ -388,7 +388,17 @@ def dashboard():
         return redirect('/login')
     return send_from_directory(BASE_DIR, 'index.html')
 
+@app.route('/login')
+def login_page():
+    if 'email' in session:
+        return redirect('/dashboard')
+    return send_from_directory(BASE_DIR, 'login.html')
 
+@app.route('/')
+def home():
+    if 'email' in session:
+        return redirect('/dashboard')
+    return redirect('/login')
 
 # ============== API المصادقة ==============
 @app.route('/api/register', methods=['POST'])
