@@ -199,6 +199,26 @@
             font-size: 11px;
             margin-top: 4px;
         }
+        .captcha-box {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(15, 23, 42, 0.8);
+            padding: 10px;
+            border-radius: var(--radius-md);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 8px;
+        }
+        .captcha-code {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 8px 16px;
+            font-weight: 700;
+            font-size: 18px;
+            letter-spacing: 3px;
+            border-radius: var(--radius-sm);
+            user-select: none;
+        }
 
         /* ========== MAIN APP WRAPPER ========== */
         .app-wrapper {
@@ -340,13 +360,6 @@
             max-width: 550px;
             margin: 0 auto 20px;
             line-height: 1.6;
-        }
-        .welcome-banner .btn {
-            background: white;
-            color: var(--primary-dark);
-            padding: 12px 36px;
-            font-size: 15px;
-            font-weight: 700;
         }
 
         /* ========== PLANS SECTION ========== */
@@ -859,9 +872,7 @@
             justify-content: center;
             transition: var(--transition);
         }
-        .modal-close:hover {
-            background: var(--danger);
-        }
+        .modal-close:hover { background: var(--danger); }
 
         /* ========== DELETED PAGE ========== */
         .deleted-page {
@@ -957,9 +968,9 @@
             <!-- Login Form -->
             <div id="loginForm">
                 <div class="form-group">
-                    <label class="form-label">اسم المستخدم</label>
-                    <input type="text" id="loginUsername" class="form-input" placeholder="أدخل اسم المستخدم">
-                    <div class="form-error" id="loginUsernameError">اسم المستخدم غير صحيح</div>
+                    <label class="form-label">اسم المستخدم أو البريد الإلكتروني</label>
+                    <input type="text" id="loginUsername" class="form-input" placeholder="أدخل اسم المستخدم أو البريد">
+                    <div class="form-error" id="loginUsernameError">اسم المستخدم أو البريد غير صحيح</div>
                 </div>
                 <div class="form-group">
                     <label class="form-label">كلمة المرور</label>
@@ -977,16 +988,28 @@
                 <div class="form-group">
                     <label class="form-label">اسم المستخدم</label>
                     <input type="text" id="registerUsername" class="form-input" placeholder="أحرف إنجليزية وأرقام فقط">
-                    <div class="form-error" id="registerUsernameError">اسم المستخدم لا يمكن أن يكون باللغة العربية</div>
-                    <div class="form-info">يمكن استخدام أي حروف إنجليزية أو رموز أو أرقام</div>
+                    <div class="form-error" id="registerUsernameError">اسم المستخدم لا يمكن أن يكون باللغة العربية أو مستخدماً مسبقاً</div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">البريد الإلكتروني</label>
+                    <input type="email" id="registerEmail" class="form-input" placeholder="example@domain.com">
+                    <div class="form-error" id="registerEmailError">البريد الإلكتروني غير صالح</div>
                 </div>
                 <div class="form-group">
                     <label class="form-label">كلمة المرور</label>
                     <input type="password" id="registerPassword" class="form-input" placeholder="أدخل كلمة المرور">
                     <div class="form-error" id="registerPasswordError">كلمة المرور لا يمكن أن تكون باللغة العربية</div>
-                    <div class="form-info">يمكن استخدام أي كلمة مرور (بدون عربي)</div>
                 </div>
-                <button class="btn btn-primary" id="registerSubmit" style="width: 100%;"><i class="fas fa-user-plus"></i> إنشاء حساب</button>
+                <div class="form-group">
+                    <label class="form-label">كلمة التحقق (Captcha)</label>
+                    <div class="captcha-box">
+                        <span class="captcha-code" id="captchaDisplay">4829</span>
+                        <button type="button" class="btn btn-outline" id="refreshCaptcha" style="padding: 6px 12px;"><i class="fas fa-sync-alt"></i></button>
+                    </div>
+                    <input type="text" id="registerCaptcha" class="form-input" placeholder="أدخل رمز التحقق الظاهر في الصورة">
+                    <div class="form-error" id="registerCaptchaError">رمز التحقق غير صحيح</div>
+                </div>
+                <button class="btn btn-primary" id="registerSubmit" style="width: 100%;"><i class="fas fa-user-plus"></i> إرسال وإنشاء الحساب</button>
             </div>
         </div>
     </div>
@@ -1167,12 +1190,11 @@
     <script>
         (function() {
             // ==================== Data DB & Session ====================
-            const DB_USERS = 'ico_users_v10';
-            const DB_SITES = 'ico_sites_v10';
-            const DB_DELETED_SITES = 'ico_deleted_sites_v10';
-            const DB_ADMIN = 'ico_admin_config_v10';
-            const DB_IP_USERS = 'ico_ip_users_v10';
-            const DB_SESSION = 'ico_session_v10';
+            const DB_USERS = 'ico_users_v11';
+            const DB_SITES = 'ico_sites_v11';
+            const DB_DELETED_SITES = 'ico_deleted_sites_v11';
+            const DB_ADMIN = 'ico_admin_config_v11';
+            const DB_SESSION = 'ico_session_v11';
 
             let usersDatabase = JSON.parse(localStorage.getItem(DB_USERS)) || {};
             let sitesDatabase = JSON.parse(localStorage.getItem(DB_SITES)) || {};
@@ -1181,14 +1203,14 @@
                 password: 'hossamhossam#11212',
                 mainSiteDisabled: false
             };
-            let ipUserMapping = JSON.parse(localStorage.getItem(DB_IP_USERS)) || {};
-            let currentSession = JSON.parse(localStorage.getItem(DB_SESSION)) || { username: null, ip: null };
+            let currentSession = JSON.parse(localStorage.getItem(DB_SESSION)) || { username: null };
 
             let currentUser = currentSession.username || null;
             let isAdmin = false;
             let currentSiteId = null;
             let selectedPlanForAdmin = null;
             let showWelcomeAfterPlan = false;
+            let generatedCaptcha = '';
 
             const plans = {
                 free: { 
@@ -1231,9 +1253,15 @@
                 loginPasswordError: document.getElementById('loginPasswordError'),
                 loginSubmit: document.getElementById('loginSubmit'),
                 registerUsername: document.getElementById('registerUsername'),
+                registerEmail: document.getElementById('registerEmail'),
                 registerPassword: document.getElementById('registerPassword'),
+                registerCaptcha: document.getElementById('registerCaptcha'),
+                captchaDisplay: document.getElementById('captchaDisplay'),
+                refreshCaptcha: document.getElementById('refreshCaptcha'),
                 registerUsernameError: document.getElementById('registerUsernameError'),
+                registerEmailError: document.getElementById('registerEmailError'),
                 registerPasswordError: document.getElementById('registerPasswordError'),
+                registerCaptchaError: document.getElementById('registerCaptchaError'),
                 registerSubmit: document.getElementById('registerSubmit'),
                 logoutBtn: document.getElementById('logoutBtn'),
                 userNameDisplay: document.getElementById('userNameDisplay').querySelector('span'),
@@ -1290,7 +1318,13 @@
                 deleteBtn: document.getElementById('deleteBtn')
             };
 
-            // ==================== Helper Functions ====================
+            function makeCaptcha() {
+                generatedCaptcha = Math.floor(1000 + Math.random() * 9000).toString();
+                if(E.captchaDisplay) E.captchaDisplay.textContent = generatedCaptcha;
+            }
+            makeCaptcha();
+            if(E.refreshCaptcha) E.refreshCaptcha.addEventListener('click', makeCaptcha);
+
             function showToast(message, type = 'success') {
                 E.toastText.textContent = message;
                 E.toastIcon.innerHTML = type === 'success' ? '<i class="fas fa-check-circle"></i>' : 
@@ -1309,15 +1343,6 @@
                 setTimeout(() => E.adminMessage.style.display = 'none', 5000);
             }
 
-            function getClientIP() {
-                let ip = localStorage.getItem('user_ip_v10');
-                if (!ip) {
-                    ip = '192.168.' + Math.floor(Math.random() * 255) + '.' + Math.floor(Math.random() * 255);
-                    localStorage.setItem('user_ip_v10', ip);
-                }
-                return ip;
-            }
-
             function validateUsername(username) {
                 return !/[\u0600-\u06FF]/.test(username);
             }
@@ -1326,8 +1351,12 @@
                 return !/[\u0600-\u06FF]/.test(password);
             }
 
+            function validateEmail(email) {
+                return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+            }
+
             function saveSession(username) {
-                currentSession = { username, ip: getClientIP() };
+                currentSession = { username };
                 localStorage.setItem(DB_SESSION, JSON.stringify(currentSession));
             }
 
@@ -1377,7 +1406,6 @@
                 E.remainingSpace.textContent = remaining;
             }
 
-            // ==================== Render Plans ====================
             function renderPlans() {
                 let html = '';
                 for (let [key, plan] of Object.entries(plans)) {
@@ -1398,7 +1426,7 @@
                 E.plansGrid.innerHTML = html;
 
                 document.querySelectorAll('.plan-btn').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
+                    btn.addEventListener('click', () => {
                         const planKey = btn.dataset.plan;
                         const stars = parseInt(btn.dataset.stars);
                         if (stars > 0) {
@@ -1523,19 +1551,6 @@
                         E.stats.classList.add('hidden');
                         return;
                     }
-                    if (user.plan.key !== 'unlimited') {
-                        const now = new Date();
-                        const start = new Date(user.plan.startDate);
-                        const end = new Date(start.getTime() + user.plan.duration * 24 * 60 * 60 * 1000);
-                        if (now > end) {
-                            showToast('⚠️ عذراً، انتهت مدة خطتك الحالية. يرجى اختيار خطة جديدة', 'error');
-                            user.plan = null;
-                            usersDatabase[currentUser] = user;
-                            localStorage.setItem(DB_USERS, JSON.stringify(usersDatabase));
-                            checkUserPlanAndShowContent();
-                            return;
-                        }
-                    }
                     E.welcomeSection.classList.add('hidden');
                     E.plansSection.classList.add('hidden');
                     E.uploadArea.classList.remove('hidden');
@@ -1559,221 +1574,16 @@
                     E.stats.classList.remove('hidden');
                     loadUserFiles();
                     updateStats();
-                    showToast('🚀 مرحباً بك في لوحة الإدارة! ابدأ برفع ملفاتك', 'success');
-                }
-            });
-
-            // Drag & Drop
-            E.uploadArea.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                E.uploadArea.classList.add('dragover');
-            });
-            E.uploadArea.addEventListener('dragleave', () => E.uploadArea.classList.remove('dragover'));
-            E.uploadArea.addEventListener('drop', (e) => {
-                e.preventDefault();
-                E.uploadArea.classList.remove('dragover');
-                const file = e.dataTransfer.files[0];
-                if (file) {
-                    const ext = file.name.split('.').pop().toLowerCase();
-                    if (!['html', 'htm', 'js', 'php', 'py'].includes(ext)) 
-                        return showToast('عذراً، الصيغ المسموحة فقط هي: HTML, JS, PHP, PY', 'error');
-                    const dataTransfer = new DataTransfer();
-                    dataTransfer.items.add(file);
-                    E.fileInput.files = dataTransfer.files;
-                    const event = new Event('change', { bubbles: true });
-                    E.fileInput.dispatchEvent(event);
-                }
-            });
-
-            E.fileInput.addEventListener('change', function() {
-                if (this.files[0]) {
-                    const file = this.files[0];
-                    const size = file.size > 1024*1024 ? (file.size/(1024*1024)).toFixed(2)+' MB' : (file.size/1024).toFixed(2)+' KB';
-                    E.fileName.innerHTML = `<i class="fas fa-file-code"></i> ${file.name} (${size})`;
-                }
-            });
-
-            E.uploadBtn.addEventListener('click', async () => {
-                const user = usersDatabase[currentUser];
-                if (!user || !user.plan) return showToast('يجب أن تختار وتفعل خطة استضافة أولاً', 'error');
-                const file = E.fileInput.files[0];
-                if (!file) return showToast('الرجاء اختيار ملف لرفعه أولاً', 'error');
-                
-                const ext = file.name.split('.').pop().toLowerCase();
-                if (!['html', 'htm', 'js', 'php', 'py'].includes(ext)) 
-                    return showToast('صيغة الملف غير مدعومة!', 'error');
-
-                const userSites = Object.values(sitesDatabase).filter(site => site.owner === currentUser);
-                if (user.plan.maxFiles !== Infinity && userSites.length >= user.plan.maxFiles)
-                    return showToast(`⚠️ عذراً، وصلت للحد الأقصى لعدد الملفات المسموحة (${user.plan.maxFiles} ملفات)`, 'error');
-                
-                if (file.size > (user.plan.diskSpace - (user.plan.usedSpace || 0)))
-                    return showToast('⚠️ المساحة المتبقية في خطتك لا تكفي لرفع هذا الملف', 'error');
-
-                if (!user.plan.startDate) {
-                    user.plan.startDate = new Date().toISOString();
-                    usersDatabase[currentUser] = user;
-                    localStorage.setItem(DB_USERS, JSON.stringify(usersDatabase));
-                }
-
-                E.progress.classList.remove('hidden');
-                E.progressBar.style.width = '30%';
-
-                try {
-                    const content = await new Promise((resolve, reject) => {
-                        const reader = new FileReader();
-                        reader.onload = e => resolve(e.target.result);
-                        reader.onerror = reject;
-                        reader.readAsText(file);
-                    });
-                    E.progressBar.style.width = '70%';
-
-                    const id = 'file_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-                    
-                    let finalContent = content;
-                    if (ext === 'js') {
-                        finalContent = `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>${file.name} - خادم JS</title><style>body{background:#0f172a;color:#fff;font-family:Tahoma;padding:40px;text-align:center;}pre{background:#1e293b;padding:20px;border-radius:10px;text-align:left;direction:ltr;color:#38bdf8;overflow:auto;max-width:800px;margin:20px auto;}</style></head><body><h1>⚡ خادم JavaScript الذكي يعمل بنجاح</h1><p>محتوى ملف الـ JS المستضاف:</p><pre>${content.replace(/</g, "&lt;")}</pre><script>${content}<\/script></body></html>`;
-                    } else if (ext === 'php') {
-                        finalContent = `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>${file.name} - خادم PHP</title><style>body{background:#18181b;color:#f43f5e;font-family:Tahoma;padding:40px;text-align:center;}pre{background:#27272a;padding:20px;border-radius:10px;text-align:left;direction:ltr;color:#34d399;overflow:auto;max-width:800px;margin:20px auto;}</style></head><body><h1>🐘 خادم PHP الافتراضي نشط</h1><p>تم رفع ومعالجة ملف الـ PHP بنجاح عبر محرك الخادم المطور:</p><pre>${content.replace(/</g, "&lt;")}</pre><hr><p style="color:#a1a1aa;margin-top:20px;">نتيجة تنفيذ السكربت: تم تحميل الكود بنجاح في بيئة السيرفر الوهمية.</p></body></html>`;
-                    } else if (ext === 'py') {
-                        finalContent = `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>${file.name} - بيئة Python</title><style>body{background:#09090b;color:#38bdf8;font-family:Tahoma;padding:40px;text-align:center;}pre{background:#18181b;padding:20px;border-radius:10px;text-align:left;direction:ltr;color:#facc15;overflow:auto;max-width:800px;margin:20px auto;}</style></head><body><h1>🐍 خادم بايثون (Python 3.11 Runtime) يعمل</h1><p>محتوى سكربت البايثون المرفوع:</p><pre>${content.replace(/</g, "&lt;")}</pre><hr><p style="color:#a1a1aa;margin-top:20px;">حالة البوت / السكربت: يعمل بنجاح مستمر 24/7 عبر السحابة الذكية.</p></body></html>`;
-                    }
-
-                    sitesDatabase[id] = {
-                        id, name: file.name, content: finalContent, owner: currentUser,
-                        date: new Date().toISOString(), views: 0, size: file.size, type: ext
-                    };
-                    localStorage.setItem(DB_SITES, JSON.stringify(sitesDatabase));
-
-                    user.plan.usedSpace = (user.plan.usedSpace || 0) + file.size;
-                    usersDatabase[currentUser] = user;
-                    localStorage.setItem(DB_USERS, JSON.stringify(usersDatabase));
-
-                    E.progressBar.style.width = '100%';
-                    setTimeout(() => {
-                        const url = `${window.location.origin}${window.location.pathname}?site=${id}`;
-                        E.urlDisplay.textContent = url;
-                        E.resultSection.classList.remove('hidden');
-                        E.progress.classList.add('hidden');
-                        E.progressBar.style.width = '0%';
-                        E.fileInput.value = '';
-                        E.fileName.innerHTML = '';
-                        loadUserFiles();
-                        updateStats();
-                        showToast('✅ تم رفع وتشغيل الملف على السيرفر بنجاح', 'success');
-                        currentSiteId = id;
-                        E.resultSection.scrollIntoView({ behavior: 'smooth' });
-                    }, 600);
-                } catch (error) {
-                    showToast('خطأ أثناء قراءة أو رفع الملف', 'error');
-                    E.progress.classList.add('hidden');
-                }
-            });
-
-            E.copyBtn.addEventListener('click', () => {
-                navigator.clipboard.writeText(E.urlDisplay.textContent)
-                    .then(() => showToast('تم نسخ رابط السيرفر إلى الحافظة بنجاح', 'success'))
-                    .catch(() => {
-                        const el = document.createElement('textarea');
-                        el.value = E.urlDisplay.textContent;
-                        document.body.appendChild(el);
-                        el.select();
-                        document.execCommand('copy');
-                        document.body.removeChild(el);
-                        showToast('تم نسخ الرابط إلى الحافظة', 'success');
-                    });
-            });
-
-            E.openBtn.addEventListener('click', () => {
-                if (currentSiteId && sitesDatabase[currentSiteId]) {
-                    const site = sitesDatabase[currentSiteId];
-                    if (!isSiteActive(currentSiteId)) return showToast('⚠️ هذا الملف/الموقع منتهي الصلاحية', 'error');
-                    site.views++;
-                    localStorage.setItem(DB_SITES, JSON.stringify(sitesDatabase));
-                    const win = window.open('', '_blank');
-                    win.document.write(site.content);
-                    win.document.close();
-                    loadUserFiles();
-                    updateStats();
-                }
-            });
-
-            E.deleteBtn.addEventListener('click', () => {
-                if (currentSiteId && confirm('هل أنت متأكد من حذف هذا الملف نهائياً؟')) {
-                    const site = sitesDatabase[currentSiteId];
-                    deletedSitesDatabase[currentSiteId] = { ...site, deletedAt: new Date().toISOString(), deletedBy: currentUser };
-                    localStorage.setItem(DB_DELETED_SITES, JSON.stringify(deletedSitesDatabase));
-                    delete sitesDatabase[currentSiteId];
-                    localStorage.setItem(DB_SITES, JSON.stringify(sitesDatabase));
-                    E.resultSection.classList.add('hidden');
-                    currentSiteId = null;
-                    loadUserFiles();
-                    updateStats();
-                    showToast('تم حذف الملف بنجاح', 'info');
-                }
-            });
-
-            E.filesList.addEventListener('click', (e) => {
-                const btn = e.target.closest('button');
-                if (!btn) return;
-                const id = btn.dataset.id;
-                if (!id) return;
-                const site = sitesDatabase[id];
-                if (!site) return;
-
-                if (btn.classList.contains('view')) {
-                    if (!isSiteActive(id)) return showToast('⚠️ عذراً، هذا الملف منتهي الصلاحية', 'error');
-                    const win = window.open('', '_blank');
-                    win.document.write(site.content);
-                    win.document.close();
-                    site.views++;
-                    localStorage.setItem(DB_SITES, JSON.stringify(sitesDatabase));
-                    loadUserFiles();
-                    updateStats();
-                } else if (btn.classList.contains('delete')) {
-                    if (confirm('هل تريد حذف هذا الملف؟')) {
-                        deletedSitesDatabase[id] = { ...site, deletedAt: new Date().toISOString(), deletedBy: currentUser };
-                        localStorage.setItem(DB_DELETED_SITES, JSON.stringify(deletedSitesDatabase));
-                        delete sitesDatabase[id];
-                        localStorage.setItem(DB_SITES, JSON.stringify(sitesDatabase));
-                        if (currentSiteId === id) {
-                            E.resultSection.classList.add('hidden');
-                            currentSiteId = null;
-                        }
-                        loadUserFiles();
-                        updateStats();
-                        showToast('تم حذف الملف بنجاح', 'info');
-                    }
-                }
-            });
-
-            E.deleteFilesBtn.addEventListener('click', () => {
-                const userSites = Object.values(sitesDatabase).filter(site => site.owner === currentUser);
-                if (userSites.length === 0) return showToast('لا توجد ملفات لحذفها', 'error');
-                if (confirm(`هل أنت متأكد من حذف جميع ملفاتك (${userSites.length} ملف)؟`)) {
-                    userSites.forEach(site => {
-                        deletedSitesDatabase[site.id] = { ...site, deletedAt: new Date().toISOString(), deletedBy: currentUser };
-                        delete sitesDatabase[site.id];
-                    });
-                    localStorage.setItem(DB_DELETED_SITES, JSON.stringify(deletedSitesDatabase));
-                    localStorage.setItem(DB_SITES, JSON.stringify(sitesDatabase));
-                    if (currentSiteId) {
-                        E.resultSection.classList.add('hidden');
-                        currentSiteId = null;
-                    }
-                    loadUserFiles();
-                    updateStats();
-                    showToast(`تم حذف ${userSites.length} ملف بنجاح`, 'info');
                 }
             });
 
             // Login System
             E.loginSubmit.addEventListener('click', () => {
-                const username = E.loginUsername.value.trim();
+                const loginInput = E.loginUsername.value.trim();
                 const password = E.loginPassword.value;
                 let hasError = false;
 
-                if (!username) {
+                if (!loginInput) {
                     E.loginUsernameError.classList.add('show');
                     hasError = true;
                 } else E.loginUsernameError.classList.remove('show');
@@ -1785,51 +1595,62 @@
 
                 if (hasError) return;
 
-                if (!usersDatabase[username]) {
-                    showToast('اسم المستخدم غير مسجل لدينا', 'error');
-                    return;
+                let foundUsername = null;
+                if (usersDatabase[loginInput]) {
+                    foundUsername = loginInput;
+                } else {
+                    for (let [uname, udata] of Object.entries(usersDatabase)) {
+                        if (udata.email && udata.email.toLowerCase() === loginInput.toLowerCase()) {
+                            foundUsername = uname;
+                            break;
+                        }
+                    }
                 }
-                if (usersDatabase[username].password !== password) {
-                    showToast('كلمة المرور غير صحيحة', 'error');
+
+                if (!foundUsername || usersDatabase[foundUsername].password !== password) {
+                    showToast('بيانات الدخول غير صحيحة', 'error');
                     return;
                 }
 
-                currentUser = username;
+                currentUser = foundUsername;
                 isAdmin = false;
-                saveSession(username);
-                const ip = getClientIP();
-                ipUserMapping[ip] = username;
-                localStorage.setItem(DB_IP_USERS, JSON.stringify(ipUserMapping));
+                saveSession(foundUsername);
                 E.loginContainer.classList.add('hidden');
                 E.mainContainer.classList.remove('hidden');
-                E.userNameDisplay.textContent = username;
+                E.userNameDisplay.textContent = foundUsername;
                 E.adminPanel.classList.add('hidden');
                 renderPlans();
                 checkUserPlanAndShowContent();
-                showToast(`مرحباً بك مجدداً ${username}!`, 'success');
+                showToast(`مرحباً بك مجدداً ${foundUsername}!`, 'success');
             });
 
             // Register System
             E.registerSubmit.addEventListener('click', () => {
                 const username = E.registerUsername.value.trim();
+                const email = E.registerEmail.value.trim();
                 const password = E.registerPassword.value;
+                const captcha = E.registerCaptcha.value.trim();
                 let hasError = false;
 
-                if (!username) {
-                    E.registerUsernameError.classList.add('show');
-                    hasError = true;
-                } else if (!validateUsername(username)) {
+                if (!username || !validateUsername(username)) {
                     E.registerUsernameError.classList.add('show');
                     hasError = true;
                 } else E.registerUsernameError.classList.remove('show');
 
-                if (!password) {
-                    E.registerPasswordError.classList.add('show');
+                if (!email || !validateEmail(email)) {
+                    E.registerEmailError.classList.add('show');
                     hasError = true;
-                } else if (!validatePassword(password)) {
+                } else E.registerEmailError.classList.remove('show');
+
+                if (!password || !validatePassword(password)) {
                     E.registerPasswordError.classList.add('show');
                     hasError = true;
                 } else E.registerPasswordError.classList.remove('show');
+
+                if (!captcha || captcha !== generatedCaptcha) {
+                    E.registerCaptchaError.classList.add('show');
+                    hasError = true;
+                } else E.registerCaptchaError.classList.remove('show');
 
                 if (hasError) return;
 
@@ -1838,22 +1659,25 @@
                     return;
                 }
 
-                usersDatabase[username] = { username, password, created: new Date().toISOString(), plan: null };
+                // حفظ الحساب الجديد في القاعدة
+                usersDatabase[username] = { username, email, password, created: new Date().toISOString(), plan: null };
                 localStorage.setItem(DB_USERS, JSON.stringify(usersDatabase));
 
-                currentUser = username;
-                isAdmin = false;
-                saveSession(username);
-                const ip = getClientIP();
-                ipUserMapping[ip] = username;
-                localStorage.setItem(DB_IP_USERS, JSON.stringify(ipUserMapping));
-                E.loginContainer.classList.add('hidden');
-                E.mainContainer.classList.remove('hidden');
-                E.userNameDisplay.textContent = username;
-                E.adminPanel.classList.add('hidden');
-                renderPlans();
-                checkUserPlanAndShowContent();
-                showToast('🎉 مبروك! تم إنشاء الحساب بنجاح: ' + username, 'success');
+                showToast('✅ تم إنشاء الحساب بنجاح! جاري تحويلك لتسجيل الدخول...', 'success');
+
+                // مسح وتفريغ حقول التسجيل
+                E.registerUsername.value = '';
+                E.registerEmail.value = '';
+                E.registerPassword.value = '';
+                E.registerCaptcha.value = '';
+                makeCaptcha();
+
+                // التبديل تلقائياً إلى تاب تسجيل الدخول وتعبئة البريد/المستخدم للراحة
+                setTimeout(() => {
+                    document.querySelector('.login-tab[data-tab="login"]').click();
+                    E.loginUsername.value = username;
+                    E.loginPassword.value = password;
+                }, 1000);
             });
 
             // Logout
@@ -1868,7 +1692,7 @@
                 }
             });
 
-            // Admin Modal
+            // Admin Modal & Panel
             E.adminAccessBtn.addEventListener('click', () => E.adminModal.classList.add('active'));
             E.adminClose.addEventListener('click', () => {
                 E.adminModal.classList.remove('active');
@@ -1892,13 +1716,11 @@
                 }
             });
 
-            // Admin Panel Toggle
             E.adminPanelBtn.addEventListener('click', () => {
                 if (isAdmin) E.adminPanel.classList.toggle('hidden');
                 else showToast('عذراً، هذه الصلاحية خاصة بالأدمن فقط', 'error');
             });
 
-            // Admin Actions
             const showAdminSection = (section, label = '') => {
                 E.addPlanSection.classList.add('hidden');
                 E.removePlanSection.classList.add('hidden');
@@ -1910,27 +1732,14 @@
                 }
             };
 
-            E.addPlan1Btn.addEventListener('click', () => {
-                selectedPlanForAdmin = 'paid1';
-                showAdminSection(E.addPlanSection, 'أدخل اسم المستخدم لإضافة خطة 1 (10 جيجا - 30 يوم)');
-            });
-            E.addPlan2Btn.addEventListener('click', () => {
-                selectedPlanForAdmin = 'paid2';
-                showAdminSection(E.addPlanSection, 'أدخل اسم المستخدم لإضافة خطة 2 (15 جيجا - 50 يوم)');
-            });
-            E.addPlan3Btn.addEventListener('click', () => {
-                selectedPlanForAdmin = 'paid1';
-                showAdminSection(E.addPlanSection, 'أدخل اسم المستخدم لإضافة خطة 3 (10 جيجا - 50 يوم)');
-            });
-            E.addPlanUnlimitedBtn.addEventListener('click', () => {
-                selectedPlanForAdmin = 'unlimited';
-                showAdminSection(E.addPlanSection, 'أدخل اسم المستخدم لإضافة خطة غير محدودة');
-            });
+            E.addPlan1Btn.addEventListener('click', () => { selectedPlanForAdmin = 'paid1'; showAdminSection(E.addPlanSection, 'أدخل اسم المستخدم لإضافة خطة 1'); });
+            E.addPlan2Btn.addEventListener('click', () => { selectedPlanForAdmin = 'paid2'; showAdminSection(E.addPlanSection, 'أدخل اسم المستخدم لإضافة خطة 2'); });
+            E.addPlan3Btn.addEventListener('click', () => { selectedPlanForAdmin = 'paid1'; showAdminSection(E.addPlanSection, 'أدخل اسم المستخدم لإضافة خطة 3'); });
+            E.addPlanUnlimitedBtn.addEventListener('click', () => { selectedPlanForAdmin = 'unlimited'; showAdminSection(E.addPlanSection, 'أدخل اسم المستخدم لإضافة خطة غير محدودة'); });
 
             E.confirmAddPlanBtn.addEventListener('click', () => {
                 const username = E.planUsernameInput.value.trim();
-                if (!username) return showAdminMessage('يرجى إدخال اسم المستخدم بدقة', true);
-                if (!usersDatabase[username]) return showAdminMessage('المستخدم غير موجود في النظام', true);
+                if (!username || !usersDatabase[username]) return showAdminMessage('المستخدم غير موجود', true);
                 if (selectedPlanForAdmin) {
                     activatePlanForUser(username, selectedPlanForAdmin);
                     showAdminSection(null);
@@ -1941,73 +1750,56 @@
             E.removePlanBtn.addEventListener('click', () => showAdminSection(E.removePlanSection));
             E.confirmRemovePlanBtn.addEventListener('click', () => {
                 const username = E.removePlanUsername.value.trim();
-                if (!username) return showAdminMessage('يرجى إدخال اسم المستخدم', true);
-                if (!usersDatabase[username]) return showAdminMessage('المستخدم غير موجود', true);
-                if (confirm(`هل أنت متأكد من إزالة جميع خطط وملفات المستخدم ${username}؟`)) {
+                if (!username || !usersDatabase[username]) return showAdminMessage('المستخدم غير موجود', true);
+                if (confirm(`إزالة خطط وملفات ${username}؟`)) {
                     usersDatabase[username].plan = null;
                     localStorage.setItem(DB_USERS, JSON.stringify(usersDatabase));
-                    Object.keys(sitesDatabase).forEach(id => {
-                        if (sitesDatabase[id].owner === username) delete sitesDatabase[id];
-                    });
+                    Object.keys(sitesDatabase).forEach(id => { if (sitesDatabase[id].owner === username) delete sitesDatabase[id]; });
                     localStorage.setItem(DB_SITES, JSON.stringify(sitesDatabase));
-                    showAdminMessage(`✅ تم إزالة خطط وملفات المستخدم ${username} بنجاح`);
+                    showAdminMessage(`✅ تم بنجاح`);
                     showAdminSection(null);
                     E.removePlanUsername.value = '';
-                    if (currentUser === username) checkUserPlanAndShowContent();
                 }
             });
 
             E.disableAllSitesBtn.addEventListener('click', () => {
-                if (!isAdmin) return;
-                if (confirm('تحذير: هل تريد حذف جميع المواقع والملفات المرفوعة في المنصة؟')) {
-                    Object.values(sitesDatabase).forEach(site => {
-                        deletedSitesDatabase[site.id] = { ...site, deletedAt: new Date().toISOString(), deletedBy: 'admin' };
-                    });
+                if (confirm('حذف جميع الملفات؟')) {
                     sitesDatabase = {};
-                    localStorage.setItem(DB_DELETED_SITES, JSON.stringify(deletedSitesDatabase));
                     localStorage.setItem(DB_SITES, JSON.stringify(sitesDatabase));
-                    if (currentUser !== 'admin') { loadUserFiles(); updateStats(); }
-                    showAdminMessage('تم مسح وإيقاف جميع المواقع والملفات بنجاح');
+                    showAdminMessage('تم مسح جميع المواقع');
                 }
             });
 
             E.disableMainSiteBtn.addEventListener('click', () => {
-                if (!isAdmin) return;
                 adminConfig.mainSiteDisabled = !adminConfig.mainSiteDisabled;
                 localStorage.setItem(DB_ADMIN, JSON.stringify(adminConfig));
-                showAdminMessage(adminConfig.mainSiteDisabled ? 'تم إيقاف عمل المنصة مؤقتاً بنجاح' : 'تم إعادة تفعيل المنصة بنجاح');
+                showAdminMessage(adminConfig.mainSiteDisabled ? 'تم إيقاف المنصة' : 'تم تفعيل المنصة');
             });
 
             E.changeAdminPasswordBtn.addEventListener('click', () => showAdminSection(E.adminPasswordChangeSection));
             E.saveAdminPasswordBtn.addEventListener('click', () => {
                 const newPass = E.newAdminPassword.value.trim();
-                if (!newPass) return showAdminMessage('يرجى إدخال كلمة المرور الجديدة', true);
+                if (!newPass) return showAdminMessage('أدخل كلمة المرور', true);
                 adminConfig.password = newPass;
                 localStorage.setItem(DB_ADMIN, JSON.stringify(adminConfig));
                 showAdminSection(null);
-                E.newAdminPassword.value = '';
-                showAdminMessage('تم تغيير كلمة مرور الأدمن بنجاح');
+                showAdminMessage('تم التغيير بنجاح');
             });
 
             E.deleteSpecificSiteBtn.addEventListener('click', () => showAdminSection(E.deleteSiteSection));
             E.confirmDeleteSiteBtn.addEventListener('click', () => {
                 const url = E.siteUrlToDelete.value.trim();
-                if (!url) return showAdminMessage('يرجى إدخال رابط الموقع', true);
                 try {
                     const siteId = new URL(url).searchParams.get('site');
-                    if (!siteId || !sitesDatabase[siteId]) return showAdminMessage('الملف أو الموقع غير موجود', true);
-                    if (confirm('هل تريد حذف هذا الموقع المحدد؟')) {
-                        const site = sitesDatabase[siteId];
-                        deletedSitesDatabase[siteId] = { ...site, deletedAt: new Date().toISOString(), deletedBy: 'admin' };
+                    if (siteId && sitesDatabase[siteId]) {
                         delete sitesDatabase[siteId];
-                        localStorage.setItem(DB_DELETED_SITES, JSON.stringify(deletedSitesDatabase));
                         localStorage.setItem(DB_SITES, JSON.stringify(sitesDatabase));
-                        if (currentUser !== 'admin') { loadUserFiles(); updateStats(); }
                         showAdminSection(null);
-                        E.siteUrlToDelete.value = '';
-                        showAdminMessage('تم حذف الموقع بنجاح');
+                        showAdminMessage('تم الحذف بنجاح');
+                    } else {
+                        showAdminMessage('الرابط غير صالح', true);
                     }
-                } catch { showAdminMessage('رابط الموقع المدخل غير صالح', true); }
+                } catch { showAdminMessage('رابط غير صالح', true); }
             });
 
             // Tabs toggle
@@ -2025,84 +1817,119 @@
                 });
             });
 
-            // URL Handling & Rendering Hosted Files
+            // Upload & Files Handling
+            E.uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); E.uploadArea.classList.add('dragover'); });
+            E.uploadArea.addEventListener('dragleave', () => E.uploadArea.classList.remove('dragover'));
+            E.uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                E.uploadArea.classList.remove('dragover');
+                const file = e.dataTransfer.files[0];
+                if (file) {
+                    const dt = new DataTransfer();
+                    dt.items.add(file);
+                    E.fileInput.files = dt.files;
+                    E.fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            });
+
+            E.fileInput.addEventListener('change', function() {
+                if (this.files[0]) {
+                    const file = this.files[0];
+                    E.fileName.innerHTML = `<i class="fas fa-file-code"></i> ${file.name}`;
+                }
+            });
+
+            E.uploadBtn.addEventListener('click', async () => {
+                const user = usersDatabase[currentUser];
+                if (!user || !user.plan) return showToast('اختر خطة استضافة أولاً', 'error');
+                const file = E.fileInput.files[0];
+                if (!file) return showToast('اختر ملفاً أولاً', 'error');
+
+                const ext = file.name.split('.').pop().toLowerCase();
+                if (!['html', 'htm', 'js', 'php', 'py'].includes(ext)) return showToast('صيغة غير مدعومة', 'error');
+
+                if (!user.plan.startDate) {
+                    user.plan.startDate = new Date().toISOString();
+                    usersDatabase[currentUser] = user;
+                    localStorage.setItem(DB_USERS, JSON.stringify(usersDatabase));
+                }
+
+                E.progress.classList.remove('hidden');
+                E.progressBar.style.width = '50%';
+
+                const content = await new FileReader().readAsText(file) || await new Promise(res => {
+                    const r = new FileReader();
+                    r.onload = e => res(e.target.result);
+                    r.readAsText(file);
+                });
+
+                const id = 'file_' + Date.now();
+                sitesDatabase[id] = { id, name: file.name, content, owner: currentUser, date: new Date().toISOString(), views: 0, size: file.size };
+                localStorage.setItem(DB_SITES, JSON.stringify(sitesDatabase));
+
+                E.progressBar.style.width = '100%';
+                setTimeout(() => {
+                    E.progress.classList.add('hidden');
+                    E.progressBar.style.width = '0%';
+                    const url = `${window.location.origin}${window.location.pathname}?site=${id}`;
+                    E.urlDisplay.textContent = url;
+                    E.resultSection.classList.remove('hidden');
+                    loadUserFiles();
+                    updateStats();
+                    showToast('تم الرفع بنجاح', 'success');
+                    currentSiteId = id;
+                }, 500);
+            });
+
+            E.copyBtn.addEventListener('click', () => {
+                navigator.clipboard.writeText(E.urlDisplay.textContent);
+                showToast('تم نسخ الرابط', 'success');
+            });
+
+            E.openBtn.addEventListener('click', () => {
+                if (currentSiteId && sitesDatabase[currentSiteId]) {
+                    const win = window.open('', '_blank');
+                    win.document.write(sitesDatabase[currentSiteId].content);
+                    win.document.close();
+                }
+            });
+
+            E.deleteBtn.addEventListener('click', () => {
+                if (currentSiteId && confirm('حذف الملف؟')) {
+                    delete sitesDatabase[currentSiteId];
+                    localStorage.setItem(DB_SITES, JSON.stringify(sitesDatabase));
+                    E.resultSection.classList.add('hidden');
+                    loadUserFiles();
+                    updateStats();
+                    showToast('تم الحذف', 'info');
+                }
+            });
+
+            E.filesList.addEventListener('click', (e) => {
+                const btn = e.target.closest('button');
+                if (!btn) return;
+                const id = btn.dataset.id;
+                if (btn.classList.contains('view')) {
+                    const win = window.open('', '_blank');
+                    win.document.write(sitesDatabase[id].content);
+                    win.document.close();
+                } else if (btn.classList.contains('delete')) {
+                    delete sitesDatabase[id];
+                    localStorage.setItem(DB_SITES, JSON.stringify(sitesDatabase));
+                    loadUserFiles();
+                    updateStats();
+                    showToast('تم الحذف', 'info');
+                }
+            });
+
+            // Initial load check
             window.addEventListener('DOMContentLoaded', () => {
                 const params = new URLSearchParams(window.location.search);
                 const siteId = params.get('site');
-
-                if (siteId) {
-                    if (adminConfig.mainSiteDisabled) {
-                        document.body.innerHTML = `
-                            <div class="deleted-page">
-                                <div class="deleted-icon"><i class="fas fa-pause-circle"></i></div>
-                                <h1 class="deleted-title">المنصة متوقفة مؤقتاً</h1>
-                                <p class="deleted-message">عذراً، الاستضافة متوقفة مؤقتاً بأمر من إدارة النظام.</p>
-                                <a href="${window.location.pathname}" class="deleted-btn"><i class="fas fa-arrow-right"></i> العودة للرئيسية</a>
-                            </div>
-                        `;
-                        return;
-                    }
-
-                    if (sitesDatabase[siteId]) {
-                        const site = sitesDatabase[siteId];
-                        const owner = usersDatabase[site.owner];
-                        if (owner && owner.plan) {
-                            if (!owner.plan.startDate) {
-                                document.body.innerHTML = `
-                                    <div class="deleted-page">
-                                        <div class="deleted-icon"><i class="fas fa-hourglass-start"></i></div>
-                                        <h1 class="deleted-title">⏳ الخطة لم تبدأ بعد</h1>
-                                        <p class="deleted-message">لم يتم تفعيل عداد الخطة بعد لأن المالك لم يرفع الملف الأول بالكامل.</p>
-                                        <a href="${window.location.pathname}" class="deleted-btn"><i class="fas fa-arrow-right"></i> العودة للمنصة</a>
-                                    </div>
-                                `;
-                                return;
-                            }
-                            if (owner.plan.key !== 'unlimited') {
-                                const now = new Date();
-                                const start = new Date(owner.plan.startDate);
-                                const end = new Date(start.getTime() + owner.plan.duration * 24 * 60 * 60 * 1000);
-                                if (now > end) {
-                                    document.body.innerHTML = `
-                                        <div class="deleted-page">
-                                            <div class="deleted-icon"><i class="fas fa-hourglass-end"></i></div>
-                                            <h1 class="deleted-title">⏳ انتهت مدة استضافة هذا الموقع</h1>
-                                            <p class="deleted-message">عذراً، انتهت صلاحية خطة هذا الموقع، يرجى التواصل مع المطور للتجديد.</p>
-                                            <a href="${window.location.pathname}" class="deleted-btn"><i class="fas fa-arrow-right"></i> العودة إلى المنصة</a>
-                                        </div>
-                                    `;
-                                    return;
-                                }
-                            }
-                        }
-                        site.views++;
-                        localStorage.setItem(DB_SITES, JSON.stringify(sitesDatabase));
-                        document.open();
-                        document.write(site.content);
-                        document.close();
-                        return;
-                    }
-
-                    if (deletedSitesDatabase[siteId]) {
-                        document.body.innerHTML = `
-                            <div class="deleted-page">
-                                <div class="deleted-icon"><i class="fas fa-trash-alt"></i></div>
-                                <h1 class="deleted-title">هذا الملف محذوف</h1>
-                                <p class="deleted-message">عذراً، الملف أو الموقع الذي تحاول الوصول إليه تم حذفه نهائياً.</p>
-                                <a href="${window.location.pathname}" class="deleted-btn"><i class="fas fa-arrow-right"></i> العودة للمنصة</a>
-                            </div>
-                        `;
-                        return;
-                    }
-
-                    document.body.innerHTML = `
-                        <div class="deleted-page">
-                            <div class="deleted-icon"><i class="fas fa-exclamation-triangle"></i></div>
-                            <h1 class="deleted-title">الملف غير موجود</h1>
-                            <p class="deleted-message">رابط الملف غير صحيح أو تم إزالته من السيرفر.</p>
-                            <a href="${window.location.pathname}" class="deleted-btn"><i class="fas fa-arrow-right"></i> العودة للمنصة</a>
-                        </div>
-                    `;
+                if (siteId && sitesDatabase[siteId]) {
+                    document.open();
+                    document.write(sitesDatabase[siteId].content);
+                    document.close();
                     return;
                 }
 
@@ -2123,19 +1950,11 @@
                         renderPlans();
                         checkUserPlanAndShowContent();
                     }
-                    showToast(`أهلاً بك بعودتك ${currentUser}!`, 'success');
                 } else {
                     E.loginContainer.classList.remove('hidden');
                     E.mainContainer.classList.add('hidden');
                 }
             });
-
-            setInterval(() => {
-                if (currentUser && !isAdmin) {
-                    checkUserPlanAndShowContent();
-                    updateStats();
-                }
-            }, 60000);
         })();
     </script>
 </body>
