@@ -1,5 +1,6 @@
 
-# app.py - نظام استضافة متطور بصفحة واحدة (Dashboard / Login)
+
+# app.py - نظام استضافة متطور مع دعم Python و Node.js
 import os
 import json
 import re
@@ -16,7 +17,7 @@ import shutil
 import zipfile
 import signal
 from datetime import datetime, timedelta
-from flask import Flask, send_from_directory, request, jsonify, session, redirect
+from flask import Flask, send_from_directory, request, jsonify, session, redirect, make_response
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 USERS_DIR = os.path.join(BASE_DIR, "USERS")
@@ -30,19 +31,20 @@ app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
 # ============== إعدادات البوت والإشعارات ==============
-BOT_TOKEN = "8107118673:AAG6xUifqFD5qtCWZMy_D9qEmC8HOCx4DBo"
-ADMIN_TELEGRAM_ID = 8091512031
+BOT_TOKEN = "9026885072:AAFjPAQQbEQObK5mbTO8eWKA5xXOBEHvWD8"
+ADMIN_TELEGRAM_IDS = [7970883512]
 
 def notify_admin(message: str):
-    """إرسال إشعار للأدمن على تليجرام"""
-    try:
-        requests.post(
-            f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
-            json={"chat_id": ADMIN_TELEGRAM_ID, "text": message, "parse_mode": "Markdown"},
-            timeout=3
-        )
-    except Exception:
-        pass
+    """إرسال إشعار لكل مسؤولي تليجرام"""
+    for admin_id in ADMIN_TELEGRAM_IDS:
+        try:
+            requests.post(
+                f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
+                json={"chat_id": admin_id, "text": message, "parse_mode": "Markdown"},
+                timeout=3
+            )
+        except Exception:
+            pass
 
 # ============== قاعدة البيانات ==============
 DB_FILE = os.path.join(BASE_DIR, "db.json")
@@ -55,22 +57,39 @@ def load_db():
                 if "plans" not in data:
                     data["plans"] = {}
                 if "server_types" not in data:
-                    data["server_types"] = ["Python", "Node.js", "PHP", "HTML"]
+                    data["server_types"] = ["Python", "Node.js"]
+                if "pending_requests" not in data:
+                    data["pending_requests"] = {}
                 return data
         except Exception:
             pass
     
+    admin_hash = hashlib.sha256(ADMIN_PASSWORD_RAW.encode()).hexdigest()
     default_db = {
-        "users": {},
+        "users": {
+            ADMIN_EMAIL: {
+                "password": admin_hash,
+                "is_admin": True,
+                "created_at": str(datetime.now()),
+                "max_servers": 999999,
+                "expiry_days": 3650,
+                "last_login": None,
+                "telegram_id": 7970883512,
+                "api_key": "admin_master_key_ziadhost",
+                "storage_limit": 10240000,
+                "plan": "admin"
+            }
+        },
         "servers": {},
         "logs": [],
+        "pending_requests": {},
         "plans": {
-            "free": {"name": "🎁 مجاني", "storage": 512000, "ram": 256, "cpu": 0.5, "max_servers": 10, "price": 0},
-            "4gb": {"name": "💎 4 جيجا", "storage": 4096000, "ram": 1024, "cpu": 1, "max_servers": 20, "price": 5},
-            "10gb": {"name": "💎 10 جيجا", "storage": 10240000, "ram": 2048, "cpu": 2, "max_servers": 50, "price": 10},
-            "40gb": {"name": "💎 40 جيجا", "storage": 40960000, "ram": 4096, "cpu": 4, "max_servers": 100, "price": 25}
+            "free": {"name": "🎁 مجاني", "storage": 512000, "ram": 256, "cpu": 0.5, "max_servers": 2, "price": 0},
+            "4gb": {"name": "💎 4 جيجا", "storage": 4096000, "ram": 1024, "cpu": 1, "max_servers": 5, "price": 5},
+            "10gb": {"name": "💎 10 جيجا", "storage": 10240000, "ram": 2048, "cpu": 2, "max_servers": 10, "price": 10},
+            "40gb": {"name": "💎 40 جيجا", "storage": 40960000, "ram": 4096, "cpu": 4, "max_servers": 20, "price": 25}
         },
-        "server_types": ["Python", "Node.js", "PHP", "HTML"]
+        "server_types": ["Python", "Node.js"]
     }
     save_db(default_db)
     return default_db
@@ -121,6 +140,8 @@ def get_user_servers_dir(email):
     return path
 
 def is_admin(email):
+    if email == ADMIN_EMAIL:
+        return True
     u = db["users"].get(email)
     return u.get("is_admin", False) if u else False
 
@@ -169,20 +190,19 @@ def _check_admin_access():
             return True
     return False
 
-# ============== اكتشاف ملفات التشغيل الداعمة (.html, .htm, .js, .php, .py) ==============
+# ============== دوال Python و Node.js ==============
 def detect_main_file(srv_path: str) -> str:
-    candidates = ["index.html", "index.htm", "main.py", "bot.py", "app.py", "index.js", "server.js", "index.php"]
-    for candidate in candidates:
+    for candidate in ["main.py", "bot.py", "app.py", "index.py", "run.py", "start.py"]:
         if os.path.exists(os.path.join(srv_path, candidate)):
             return candidate
-    all_files = [f for f in os.listdir(srv_path) if f.lower().endswith(('.html', '.htm', '.js', '.php', '.py'))]
-    return all_files[0] if all_files else ""
+    py_files = [f for f in os.listdir(srv_path) if f.endswith('.py')]
+    return py_files[0] if py_files else ""
 
 def auto_install_deps(srv_path: str, log_file):
     try:
         req = os.path.join(srv_path, "requirements.txt")
         if os.path.exists(req):
-            log_file.write(f"\n📦 تثبيت requirements.txt تلقائياً...\n")
+            log_file.write(f"\n📦 تثبيت requirements.txt...\n")
             log_file.flush()
             proc = subprocess.Popen(
                 [sys.executable, "-m", "pip", "install", "-r", "requirements.txt"],
@@ -192,16 +212,24 @@ def auto_install_deps(srv_path: str, log_file):
                 env=os.environ.copy()
             )
             proc.wait(timeout=180)
-            log_file.write("✅ تم تثبيت جميع المكتبات بنجاح\n")
+            log_file.write("✅ تم تثبيت المكتبات\n")
     except Exception as e:
-        log_file.write(f"\n⚠️ خطأ في التثبيت التلقائي للمكتبات: {e}\n")
+        log_file.write(f"\n⚠️ تثبيت تلقائي: {e}\n")
     log_file.flush()
+
+def detect_node_main_file(srv_path: str) -> str:
+    candidates = ["index.js", "server.js", "app.js", "main.js", "bot.js", "start.js"]
+    for candidate in candidates:
+        if os.path.exists(os.path.join(srv_path, candidate)):
+            return candidate
+    js_files = [f for f in os.listdir(srv_path) if f.endswith('.js')]
+    return js_files[0] if js_files else ""
 
 def auto_install_node_deps(srv_path: str, log_file):
     try:
         package_json = os.path.join(srv_path, "package.json")
         if os.path.exists(package_json):
-            log_file.write(f"\n📦 تثبيت حزم Node.js عبر npm...\n")
+            log_file.write(f"\n📦 تثبيت حزم Node.js...\n")
             log_file.flush()
             proc = subprocess.Popen(
                 ["npm", "install"],
@@ -211,100 +239,42 @@ def auto_install_node_deps(srv_path: str, log_file):
                 env=os.environ.copy()
             )
             proc.wait(timeout=180)
-            log_file.write("✅ تم تثبيت حزم Node.js بنجاح\n")
+            log_file.write("✅ تم تثبيت حزم Node.js\n")
     except Exception as e:
-        log_file.write(f"\n⚠️ فشل تثبيت حزم Node.js: {e}\n")
+        log_file.write(f"\n⚠️ تثبيت تلقائي Node.js فشل: {e}\n")
     log_file.flush()
 
-# ============== تشغيل السيرفر حسب النوع ==============
 def start_server_process(folder):
     srv = db["servers"].get(folder)
     if not srv:
         return False, "السيرفر غير موجود"
 
     server_type = srv.get("server_type", "Python")
+    main_file = srv.get("startup_file", "")
     
-    # تثبيت المكتبات المطلوبة قبل التشغيل إن وجدت
-    log_path = os.path.join(srv["path"], "out.log")
-    with open(log_path, "a", encoding='utf-8') as log_file:
-        if server_type == "Python":
-            auto_install_deps(srv["path"], log_file)
-        elif server_type == "Node.js":
-            auto_install_node_deps(srv["path"], log_file)
-
     if server_type == "Node.js":
-        return start_node_server_process(folder)
-    elif server_type == "PHP":
-        return start_php_server_process(folder)
-    elif server_type == "HTML":
-        return start_html_server_process(folder)
-    else:
-        return start_python_server_process(folder)
-
-def start_python_server_process(folder):
-    srv = db["servers"].get(folder)
-    main_file = srv.get("startup_file", "") or detect_main_file(srv["path"])
-    if not main_file:
-        return False, "لا يوجد ملف تشغيل مدعوم (.py, .js, .html, .php)"
-    
-    srv["startup_file"] = main_file
-    save_db(db)
-
-    port = srv.get("port") or get_assigned_port()
-    srv["port"] = port
-    save_db(db)
-
-    log_path = os.path.join(srv["path"], "out.log")
-    error_path = os.path.join(srv["path"], "errors.log")
-    log_file = open(log_path, "a", encoding='utf-8')
-    log_file.write(f"\n{'='*50}\n🚀 بدء التشغيل (Python) - {datetime.now()}\n📁 الملف الرئيسي: {main_file}\n🔌 المنفذ: {port}\n{'='*50}\n\n")
-    log_file.flush()
-
-    try:
-        env = os.environ.copy()
-        env["PORT"] = str(port)
-        cmd = [sys.executable, "-u", main_file]
-        proc = subprocess.Popen(cmd, cwd=srv["path"], stdout=log_file, stderr=open(error_path, "a", encoding='utf-8'), env=env, preexec_fn=os.setsid if hasattr(os, 'setsid') else None)
-        srv["status"] = "Running"
-        srv["pid"] = proc.pid
-        srv["start_time"] = time.time()
-        save_db(db)
-        return True, "✅ تم التشغيل بنجاح"
-    except Exception as e:
-        return False, str(e)
-
-def start_node_server_process(folder):
-    srv = db["servers"].get(folder)
-    main_file = srv.get("startup_file", "") or detect_main_file(srv["path"])
-    if not main_file:
-        return False, "لا يوجد ملف تشغيل مدعوم لـ Node.js"
-    
-    srv["startup_file"] = main_file
-    port = srv.get("port") or get_assigned_port()
-    srv["port"] = port
-    save_db(db)
-
-    log_path = os.path.join(srv["path"], "out.log")
-    error_path = os.path.join(srv["path"], "errors.log")
-    log_file = open(log_path, "a", encoding='utf-8')
-    log_file.write(f"\n{'='*50}\n🚀 بدء التشغيل (Node.js) - {datetime.now()}\n📁 الملف: {main_file}\n🔌 المنفذ: {port}\n{'='*50}\n\n")
-    log_file.flush()
-
-    try:
-        env = os.environ.copy()
-        env["PORT"] = str(port)
+        if not main_file:
+            main_file = detect_node_main_file(srv["path"])
+            if main_file:
+                srv["startup_file"] = main_file
+                save_db(db)
+            else:
+                return False, "لا يوجد ملف تشغيل JavaScript (.js)"
         cmd = ["node", main_file]
-        proc = subprocess.Popen(cmd, cwd=srv["path"], stdout=log_file, stderr=open(error_path, "a", encoding='utf-8'), env=env, preexec_fn=os.setsid if hasattr(os, 'setsid') else None)
-        srv["status"] = "Running"
-        srv["pid"] = proc.pid
-        srv["start_time"] = time.time()
-        save_db(db)
-        return True, "✅ تم التشغيل بنجاح"
-    except Exception as e:
-        return False, str(e)
+    else:
+        if not main_file:
+            main_file = detect_main_file(srv["path"])
+            if main_file:
+                srv["startup_file"] = main_file
+                save_db(db)
+            else:
+                return False, "لا يوجد ملف تشغيل Python (.py)"
+        cmd = [sys.executable, "-u", main_file]
 
-def start_php_server_process(folder):
-    srv = db["servers"].get(folder)
+    file_path = os.path.join(srv["path"], main_file)
+    if not os.path.exists(file_path):
+        return False, f"الملف '{main_file}' غير موجود"
+
     port = srv.get("port") or get_assigned_port()
     srv["port"] = port
     save_db(db)
@@ -312,36 +282,32 @@ def start_php_server_process(folder):
     log_path = os.path.join(srv["path"], "out.log")
     error_path = os.path.join(srv["path"], "errors.log")
     log_file = open(log_path, "a", encoding='utf-8')
-    
+    log_file.write(
+        f"\n{'='*50}\n🚀 بدء التشغيل ({server_type}) - {datetime.now()}\n"
+        f"📁 {main_file}\n🔌 المنفذ: {port}\n{'='*50}\n\n"
+    )
+    log_file.flush()
+
     try:
-        cmd = ["php", "-S", f"127.0.0.1:{port}"]
-        proc = subprocess.Popen(cmd, cwd=srv["path"], stdout=log_file, stderr=open(error_path, "a", encoding='utf-8'), preexec_fn=os.setsid if hasattr(os, 'setsid') else None)
+        env = os.environ.copy()
+        env["PORT"] = str(port)
+        env["SERVER_PORT"] = str(port)
+        proc = subprocess.Popen(
+            cmd,
+            cwd=srv["path"],
+            stdout=log_file,
+            stderr=open(error_path, "a", encoding='utf-8'),
+            env=env,
+            preexec_fn=os.setsid if hasattr(os, 'setsid') else None
+        )
         srv["status"] = "Running"
         srv["pid"] = proc.pid
         srv["start_time"] = time.time()
         save_db(db)
-        return True, "✅ تم تشغيل خادم PHP بنجاح"
+        return True, "✅ تم التشغيل"
     except Exception as e:
-        return False, f"فشل تشغيل PHP: {e}"
-
-def start_html_server_process(folder):
-    srv = db["servers"].get(folder)
-    port = srv.get("port") or get_assigned_port()
-    srv["port"] = port
-    save_db(db)
-
-    log_path = os.path.join(srv["path"], "out.log")
-    log_file = open(log_path, "a", encoding='utf-8')
-    
-    try:
-        cmd = [sys.executable, "-m", "http.server", str(port)]
-        proc = subprocess.Popen(cmd, cwd=srv["path"], stdout=log_file, stderr=subprocess.STDOUT, preexec_fn=os.setsid if hasattr(os, 'setsid') else None)
-        srv["status"] = "Running"
-        srv["pid"] = proc.pid
-        srv["start_time"] = time.time()
-        save_db(db)
-        return True, "✅ تم تشغيل خادم Static HTML بنجاح"
-    except Exception as e:
+        log_file.write(f"\n❌ خطأ: {e}\n")
+        log_file.close()
         return False, str(e)
 
 def stop_server_process(folder):
@@ -370,7 +336,6 @@ def restart_server(folder):
     time.sleep(2)
     start_server_process(folder)
 
-# ============== مراقبة العمليات ==============
 def process_monitor():
     while True:
         try:
@@ -390,12 +355,20 @@ def process_monitor():
 
 threading.Thread(target=process_monitor, daemon=True).start()
 
-# ============== الصفحات المطلوبة (تم إصلاح مسارات 404 هنا) ==============
+# ============== المسارات الأساسية ==============
 @app.route('/')
 def home():
     if 'email' in session:
+        if is_admin(session['email']):
+            return redirect('/admin')
         return redirect('/dashboard')
-    return redirect('/login')
+    return send_from_directory(BASE_DIR, 'landing.html')
+
+@app.route('/login')
+def login_page():
+    if 'email' in session:
+        return redirect('/')
+    return send_from_directory(BASE_DIR, 'login.html')
 
 @app.route('/dashboard')
 def dashboard():
@@ -403,13 +376,13 @@ def dashboard():
         return redirect('/login')
     return send_from_directory(BASE_DIR, 'index.html')
 
-@app.route('/login')
-def login_page():
-    if 'email' in session:
-        return redirect('/dashboard')
-    return send_from_directory(BASE_DIR, 'login.html')
+@app.route('/admin')
+def admin_panel():
+    if 'email' not in session or not is_admin(session['email']):
+        return redirect('/login')
+    return send_from_directory(BASE_DIR, 'admin_panel.html')
 
-# ============== API المصادقة ==============
+# ============== API المصادقة والتسجيل مع التليجرام ==============
 @app.route('/api/register', methods=['POST'])
 def api_register():
     data = request.get_json()
@@ -420,41 +393,34 @@ def api_register():
         return jsonify({"success": False, "message": "جميع الحقول مطلوبة"})
     if '@' not in email or '.' not in email:
         return jsonify({"success": False, "message": "البريد الإلكتروني غير صالح"})
-    if len(password) < 4:
-        return jsonify({"success": False, "message": "كلمة المرور 4 أحرف على الأقل"})
-    if email in db["users"]:
-        return jsonify({"success": False, "message": "البريد الإلكتروني موجود بالفعل"})
+    if email in db["users"] or email in db.get("pending_requests", {}):
+        return jsonify({"success": False, "message": "البريد الإلكتروني موجود بالفعل أو قيد الانتظار"})
 
-    is_first_user = len(db["users"]) == 0
-
-    db["users"][email] = {
+    # حفظ في الطلبات المعلقة ليقوم الأدمن بالموافقة عبر التليجرام
+    db.setdefault("pending_requests", {})[email] = {
         "password": hashlib.sha256(password.encode()).hexdigest(),
-        "is_admin": is_first_user,
-        "created_at": str(datetime.now()),
-        "max_servers": 999999 if is_first_user else db["plans"]["free"]["max_servers"],
-        "expiry_days": 3650 if is_first_user else 365,
-        "last_login": None,
-        "telegram_id": None,
-        "api_key": None,
-        "storage_limit": 102400 if is_first_user else db["plans"]["free"]["storage"],
-        "plan": "admin" if is_first_user else "free"
+        "created_at": str(datetime.now())
     }
     save_db(db)
-    
-    safe_email = email.replace('@', '_at_').replace('.', '_dot_')
-    user_dir = os.path.join(USERS_DIR, safe_email)
-    os.makedirs(user_dir, exist_ok=True)
-    os.makedirs(os.path.join(user_dir, "SERVERS"), exist_ok=True)
 
-    threading.Thread(target=notify_admin, args=(f"🔔 *مستخدم جديد!*\n📧 {email}",), daemon=True).start()
+    # إشعار المسؤول عبر التليجرام مع اسم المستخدم
+    notify_admin(f"🔔 *طلب تسجيل حساب جديد!*\n📧 البريد: `{email}`\n\nيرجى الدخول إلى لوحة إدارة البوت للقبول أو الرفض.")
 
-    return jsonify({"success": True, "message": "✅ تم إنشاء حسابك بنجاح!"})
+    return jsonify({"success": True, "message": "✅ تم إرسال طلبك بنجاح، بانتظار موافقة المسؤول عبر تيليجرام!"})
 
 @app.route('/api/login', methods=['POST'])
 def api_login():
     data = request.get_json()
     email = data.get("email", "").strip().lower()
     password = data.get("password", "").strip()
+
+    if email == ADMIN_EMAIL and password == ADMIN_PASSWORD_RAW:
+        session.clear()
+        session['email'] = email
+        session.permanent = True
+        db["users"][ADMIN_EMAIL]["last_login"] = str(datetime.now())
+        save_db(db)
+        return jsonify({"success": True, "redirect": "/admin", "is_admin": True})
 
     user = db["users"].get(email)
     if user and user["password"] == hashlib.sha256(password.encode()).hexdigest():
@@ -463,9 +429,9 @@ def api_login():
         session.permanent = True
         user["last_login"] = str(datetime.now())
         save_db(db)
-        return jsonify({"success": True, "redirect": "/dashboard", "is_admin": user.get("is_admin", False)})
+        return jsonify({"success": True, "redirect": "/dashboard", "is_admin": False})
 
-    return jsonify({"success": False, "message": "بيانات غير صحيحة"})
+    return jsonify({"success": False, "message": "بيانات غير صحيحة أو لم يتم قبول الحساب بعد"})
 
 @app.route('/api/logout', methods=['GET', 'POST'])
 def api_logout():
@@ -485,7 +451,6 @@ def api_current_user():
             })
     return jsonify({"success": False})
 
-# ============== API Key ==============
 @app.route('/api/create_api_key', methods=['POST'])
 def create_api_key():
     if 'email' not in session:
@@ -496,32 +461,64 @@ def create_api_key():
     save_db(db)
     return jsonify({"success": True, "api_key": new_key})
 
-# ============== API الخطط ==============
-@app.route('/api/plans')
-def get_plans():
-    return jsonify({"success": True, "plans": db.get("plans", {})})
+# ============== API الإدارة والطلبات المعلقة للتليجرام ==============
+@app.route('/api/admin/pending')
+def admin_pending():
+    if not _check_admin_access():
+        return jsonify({"success": False}), 403
+    reqs = []
+    for email, info in db.get("pending_requests", {}).items():
+        reqs.append({
+            "username": email,
+            "created_at": info.get("created_at")
+        })
+    return jsonify({"success": True, "requests": reqs})
 
-@app.route('/api/user/upgrade', methods=['POST'])
-def upgrade_plan():
-    if 'email' not in session:
-        return jsonify({"success": False, "message": "غير مصرح"}), 401
+@app.route('/api/admin/approve', methods=['POST'])
+def admin_approve():
+    if not _check_admin_access():
+        return jsonify({"success": False}), 403
     data = request.get_json()
-    plan_id = data.get("plan_id")
-    if not plan_id or plan_id not in db.get("plans", {}):
-        return jsonify({"success": False, "message": "خطة غير موجودة"})
+    username = data.get("username", "").strip().lower()
     
-    plan = db["plans"][plan_id]
-    email = session['email']
-    user = db["users"][email]
-    
-    user["plan"] = plan_id
-    user["max_servers"] = plan["max_servers"]
-    user["storage_limit"] = plan["storage"]
-    save_db(db)
-    
-    return jsonify({"success": True, "message": f"✅ تم ترقية حسابك إلى {plan['name']}"})
+    if username in db.get("pending_requests", {}):
+        req_info = db["pending_requests"].pop(username)
+        db["users"][username] = {
+            "password": req_info["password"],
+            "is_admin": False,
+            "created_at": str(datetime.now()),
+            "max_servers": db["plans"]["free"]["max_servers"],
+            "expiry_days": 365,
+            "last_login": None,
+            "telegram_id": None,
+            "api_key": generate_api_key(),
+            "storage_limit": db["plans"]["free"]["storage"],
+            "plan": "free"
+        }
+        save_db(db)
+        
+        # إنشاء المجلدات الخاصة بالمستخدم
+        safe_email = username.replace('@', '_at_').replace('.', '_dot_')
+        user_dir = os.path.join(USERS_DIR, safe_email)
+        os.makedirs(user_dir, exist_ok=True)
+        os.makedirs(os.path.join(user_dir, "SERVERS"), exist_ok=True)
+        
+        return jsonify({"success": True, "message": "تم قبول المستخدم بنجاح"})
+    return jsonify({"success": False, "message": "الطلب غير موجود"})
 
-# ============== API الإدارة ==============
+@app.route('/api/admin/reject', methods=['POST'])
+def admin_reject():
+    if not _check_admin_access():
+        return jsonify({"success": False}), 403
+    data = request.get_json()
+    username = data.get("username", "").strip().lower()
+    
+    if username in db.get("pending_requests", {}):
+        db["pending_requests"].pop(username)
+        save_db(db)
+        return jsonify({"success": True, "message": "تم رفض الطلب"})
+    return jsonify({"success": False, "message": "الطلب غير موجود"})
+
 @app.route('/api/admin/users')
 def admin_users():
     if not _check_admin_access():
@@ -529,7 +526,7 @@ def admin_users():
     users_list = []
     for uemail, udata in db["users"].items():
         users_list.append({
-            "email": uemail,
+            "username": uemail,
             "is_admin": udata.get("is_admin", False),
             "created_at": udata.get("created_at"),
             "max_servers": udata.get("max_servers", 1),
@@ -537,54 +534,29 @@ def admin_users():
         })
     return jsonify({"success": True, "users": users_list})
 
-@app.route('/api/admin/create-user', methods=['POST'])
-def admin_create_user():
-    if not _check_admin_access():
-        return jsonify({"success": False}), 403
-    data = request.get_json()
-    email = data.get("email", "").strip().lower()
-    password = data.get("password", "").strip()
-    max_servers = int(data.get("max_servers", 2))
-    
-    if email in db["users"]:
-        return jsonify({"success": False, "message": "المستخدم موجود"})
-    
-    db["users"][email] = {
-        "password": hashlib.sha256(password.encode()).hexdigest(),
-        "is_admin": False,
-        "created_at": str(datetime.now()),
-        "max_servers": max_servers,
-        "expiry_days": 365,
-        "last_login": None,
-        "telegram_id": None,
-        "api_key": None,
-        "storage_limit": 512000,
-        "plan": "free"
-    }
-    save_db(db)
-    return jsonify({"success": True, "message": "✅ تم إنشاء الحساب"})
-
 @app.route('/api/admin/delete-user', methods=['POST'])
 def admin_delete_user():
     if not _check_admin_access():
         return jsonify({"success": False}), 403
     data = request.get_json()
-    email = data.get("email", "").strip().lower()
+    username = data.get("username", "").strip().lower()
+    if username == ADMIN_EMAIL:
+        return jsonify({"success": False, "message": "لا يمكن حذف الأدمن"})
     
-    if email in db["users"]:
+    if username in db["users"]:
         for fid, srv in list(db["servers"].items()):
-            if srv["owner"] == email:
+            if srv["owner"] == username:
                 stop_server_process(fid)
                 if os.path.exists(srv["path"]):
                     shutil.rmtree(srv["path"], ignore_errors=True)
                 del db["servers"][fid]
         
-        del db["users"][email]
+        del db["users"][username]
         save_db(db)
-        return jsonify({"success": True, "message": f"🗑 تم حذف المستخدم"})
+        return jsonify({"success": True, "message": f"تم حذف المستخدم"})
     return jsonify({"success": False, "message": "المستخدم غير موجود"})
 
-# ============== API النظام ==============
+# ============== بقية الروابط والمخدمات ==============
 @app.route('/api/system/metrics')
 def get_metrics():
     return jsonify({
@@ -593,30 +565,13 @@ def get_metrics():
         "disk": psutil.disk_usage('/').percent
     })
 
-# ============== السيرفرات ==============
 @app.route('/api/servers')
 def list_servers():
     if "email" not in session:
         return jsonify({"success": False}), 401
-    
     user_servers = []
-    total_disk_used_mb = 0.0
     for folder, srv in db["servers"].items():
         if srv["owner"] == session["email"]:
-            disk_used = 0
-            if os.path.exists(srv["path"]):
-                try:
-                    for root, dirs, files in os.walk(srv["path"]):
-                        for f in files:
-                            fp = os.path.join(root, f)
-                            try:
-                                disk_used += os.path.getsize(fp)
-                            except Exception:
-                                pass
-                except Exception:
-                    pass
-            disk_used_mb = round(disk_used / (1024 * 1024), 2)
-            total_disk_used_mb += disk_used_mb
             user_servers.append({
                 "folder": folder,
                 "title": srv["name"],
@@ -624,57 +579,40 @@ def list_servers():
                 "status": srv.get("status", "Stopped"),
                 "uptime": uptime_str(srv.get("start_time")) if srv.get("status") == "Running" else "0 ثانية",
                 "port": srv.get("port", "N/A"),
-                "plan": srv.get("plan", "free"),
-                "storage_limit": srv.get("storage_limit", 512000),
-                "ram_limit": srv.get("ram_limit", 256),
-                "cpu_limit": srv.get("cpu_limit", 0.5),
-                "disk_used": disk_used_mb
+                "type": srv.get("server_type", "Python")
             })
-    user = db["users"].get(session["email"], {})
-    return jsonify({
-        "success": True,
-        "servers": user_servers,
-        "stats": {
-            "used": len(user_servers),
-            "total": user.get("max_servers", 10),
-            "expiry": user.get("expiry_days", 365),
-            "disk_used": round(total_disk_used_mb, 2),
-            "disk_total": user.get("storage_limit", 512000),
-        }
-    })
+    return jsonify({"success": True, "servers": user_servers})
 
 @app.route('/api/server/add', methods=['POST'])
+@app.route('/api/bot/create_server', methods=['POST'])
 def add_server():
-    if "email" not in session:
+    api_key = request.headers.get('api_key') or (request.get_json() or {}).get("api_key")
+    email = None
+    if "email" in session:
+        email = session["email"]
+    elif api_key:
+        email, _ = get_user_by_api_key(api_key)
+        
+    if not email:
         return jsonify({"success": False, "message": "غير مصرح"}), 401
     
-    user = db["users"].get(session["email"])
-    if not user:
-        return jsonify({"success": False, "message": "مستخدم غير موجود"})
-    
-    user_srv_count = len([s for s in db["servers"].values() if s["owner"] == session["email"]])
-    if user_srv_count >= user.get("max_servers", 10):
-        return jsonify({"success": False, "message": f"وصلت للحد الأقصى ({user.get('max_servers', 10)}) سيرفر"})
-    
-    data = request.get_json() or {}
+    user = db["users"].get(email)
+    data = request.get_json()
     name = data.get("name", "").strip()
     server_type = data.get("server_type", "Python")
     
     if not name:
         return jsonify({"success": False, "message": "الرجاء إدخال اسم للسيرفر"})
     
-    plan_id = user.get("plan", "free")
-    plan = db["plans"].get(plan_id, db["plans"]["free"])
-    
-    safe_email = session['email'].replace('@', '_at_').replace('.', '_dot_')
+    safe_email = email.replace('@', '_at_').replace('.', '_dot_')
     folder = f"{safe_email}_{re.sub(r'[^a-zA-Z0-9]', '', name)}_{int(time.time())}"
-    path = os.path.join(get_user_servers_dir(session["email"]), folder)
+    path = os.path.join(get_user_servers_dir(email), folder)
     os.makedirs(path, exist_ok=True)
     assigned_port = get_assigned_port()
     
     db["servers"][folder] = {
         "name": name,
-        "owner": session["email"],
+        "owner": email,
         "path": path,
         "server_type": server_type,
         "status": "Stopped",
@@ -682,17 +620,10 @@ def add_server():
         "startup_file": "",
         "pid": None,
         "port": assigned_port,
-        "plan": plan_id,
-        "storage_limit": plan["storage"],
-        "ram_limit": plan["ram"],
-        "cpu_limit": plan["cpu"]
+        "plan": user.get("plan", "free")
     }
     save_db(db)
-    
-    # تشغيل السيرفر تلقائياً عند إنشائه ليعمل فوراً
-    start_server_process(folder)
-    
-    return jsonify({"success": True, "message": f"✅ تم إنشاء وتشغيل سيرفر {server_type}: {name}", "folder": folder})
+    return jsonify({"success": True, "message": f"✅ تم إنشاء {server_type} سيرفر: {name}"})
 
 @app.route('/api/server/action/<folder>/<action>', methods=['POST'])
 def server_action(folder, action):
@@ -700,301 +631,29 @@ def server_action(folder, action):
         return jsonify({"success": False}), 401
     srv = db["servers"].get(folder)
     if not srv or srv["owner"] != session["email"]:
-        return jsonify({"success": False, "message": "غير مصرح"})
+        return jsonify({"success": False})
     
     if action == "start":
-        if srv.get("status") == "Running":
-            return jsonify({"success": False, "message": "الخادم يعمل بالفعل"})
         ok, msg = start_server_process(folder)
         return jsonify({"success": ok, "message": msg})
     elif action == "stop":
         stop_server_process(folder)
-        return jsonify({"success": True, "message": "🛑 تم الإيقاف بنجاح"})
+        return jsonify({"success": True})
     elif action == "restart":
         restart_server(folder)
-        return jsonify({"success": True, "message": "🔄 تم إعادة التشغيل بنجاح"})
+        return jsonify({"success": True})
     elif action == "delete":
         stop_server_process(folder)
         if os.path.exists(srv["path"]):
             shutil.rmtree(srv["path"], ignore_errors=True)
         del db["servers"][folder]
         save_db(db)
-        return jsonify({"success": True, "message": "🗑 تم حذف السيرفر نهائياً"})
+        return jsonify({"success": True})
     return jsonify({"success": False})
 
-@app.route('/api/server/stats/<folder>')
-def get_server_stats(folder):
-    if "email" not in session:
-        return jsonify({"success": False}), 401
-    srv = db["servers"].get(folder)
-    if not srv or srv["owner"] != session["email"]:
-        return jsonify({"success": False})
-    
-    status = srv.get("status", "Stopped")
-    logs = "لا توجد مخرجات بعد"
-    log_path = os.path.join(srv["path"], "out.log")
-    if os.path.exists(log_path):
-        try:
-            with open(log_path, 'r', encoding='utf-8', errors='ignore') as f:
-                lines = f.read().split('\n')
-                logs = '\n'.join(lines[-500:])
-        except Exception:
-            pass
-    
-    mem_info = "0 MB"
-    if srv.get("pid") and status == "Running":
-        try:
-            p = psutil.Process(srv["pid"])
-            mem_info = f"{p.memory_info().rss / (1024*1024):.1f} MB"
-        except Exception:
-            pass
-    
-    return jsonify({
-        "success": True,
-        "status": status,
-        "logs": logs,
-        "mem": mem_info,
-        "uptime": uptime_str(srv.get("start_time")) if status == "Running" else "0 ثانية",
-        "port": srv.get("port", "--"),
-        "ip": get_public_ip(),
-        "server_type": srv.get("server_type", "Python"),
-        "name": srv.get("name", "Server")
-    })
-
-# ============== إدارة الملفات (رفع من 1 إلى 100+ ملف دفعة واحدة) ==============
-@app.route('/api/files/list/<folder>')
-def list_server_files(folder):
-    if "email" not in session:
-        return jsonify([]), 401
-    srv = db["servers"].get(folder)
-    if not srv or srv["owner"] != session["email"]:
-        return jsonify([])
-    
-    path = srv["path"]
-    files = []
-    try:
-        for f in os.listdir(path):
-            if f in ['out.log', 'server.log', 'meta.json', 'errors.log']:
-                continue
-            fpath = os.path.join(path, f)
-            stat = os.stat(fpath)
-            size_bytes = stat.st_size
-            if size_bytes < 1024:
-                size_str = f"{size_bytes} B"
-            elif size_bytes < 1024 * 1024:
-                size_str = f"{size_bytes/1024:.1f} KB"
-            else:
-                size_str = f"{size_bytes/(1024*1024):.1f} MB"
-            files.append({
-                "name": f,
-                "size": size_str,
-                "is_dir": os.path.isdir(fpath),
-                "modified": datetime.fromtimestamp(stat.st_mtime).strftime('%Y-%m-%d %H:%M'),
-                "is_zip": f.lower().endswith('.zip')
-            })
-    except Exception:
-        pass
-    return jsonify(sorted(files, key=lambda x: (not x['is_dir'], x['name'].lower())))
-
-@app.route('/api/files/content/<folder>/<path:filename>')
-def get_file_content(folder, filename):
-    if "email" not in session:
-        return jsonify({"content": ""}), 401
-    srv = db["servers"].get(folder)
-    if not srv or srv["owner"] != session["email"]:
-        return jsonify({"content": ""})
-    if '..' in filename:
-        return jsonify({"content": ""})
-    
-    fpath = os.path.join(srv["path"], filename)
-    if not os.path.exists(fpath) or os.path.isdir(fpath):
-        return jsonify({"content": ""})
-    try:
-        with open(fpath, 'r', encoding='utf-8', errors='replace') as f:
-            return jsonify({"content": f.read()})
-    except Exception:
-        return jsonify({"content": "[ملف ثنائي]"})
-
-@app.route('/api/files/save/<folder>/<path:filename>', methods=['POST'])
-def save_file_content(folder, filename):
-    if "email" not in session:
-        return jsonify({"success": False}), 401
-    srv = db["servers"].get(folder)
-    if not srv or srv["owner"] != session["email"]:
-        return jsonify({"success": False})
-    if '..' in filename:
-        return jsonify({"success": False})
-    
-    data = request.get_json() or {}
-    fpath = os.path.join(srv["path"], filename)
-    try:
-        with open(fpath, 'w', encoding='utf-8') as f:
-            f.write(data.get("content", ""))
-        return jsonify({"success": True, "message": "✅ تم حفظ الملف بنجاح"})
-    except Exception as e:
-        return jsonify({"success": False, "message": str(e)})
-
-@app.route('/api/files/upload/<folder>', methods=['POST'])
-def upload_files(folder):
-    if "email" not in session:
-        return jsonify({"success": False}), 401
-    srv = db["servers"].get(folder)
-    if not srv or srv["owner"] != session["email"]:
-        return jsonify({"success": False})
-    
-    # دعم رفع ملفات متعددة (من 1 إلى 100+ ملف دفعة واحدة)
-    files = request.files.getlist('files[]')
-    if not files:
-        files = request.files.getlist('file')
-        
-    uploaded = 0
-    for f in files:
-        try:
-            if f and f.filename and '..' not in f.filename:
-                save_path = os.path.join(srv["path"], f.filename)
-                f.save(save_path)
-                uploaded += 1
-                
-                # فك ضغط الملفات المضغوطة تلقائياً إذا تم رفع ملف zip
-                if f.filename.lower().endswith('.zip'):
-                    try:
-                        with zipfile.ZipFile(save_path, 'r') as zf:
-                            zf.extractall(srv["path"])
-                    except Exception:
-                        pass
-        except Exception as e:
-            print(f"Error uploading file: {e}")
-    
-    if uploaded > 0:
-        stype = srv.get("server_type")
-        log_file_path = os.path.join(srv["path"], "out.log")
-        
-        # تثبيت المكتبات وتشغيل البوت تلقائياً بعد اكتمال رفع الملفات
-        def post_upload_tasks():
-            with open(log_file_path, "a", encoding='utf-8') as log_f:
-                if stype == "Node.js":
-                    auto_install_node_deps(srv["path"], log_f)
-                elif stype == "Python":
-                    auto_install_deps(srv["path"], log_f)
-            # إعادة تشغيل السيرفر لتطبيق التحديثات والملفات الجديدة وتشغيل البوت فوراً
-            restart_server(folder)
-            
-        threading.Thread(target=post_upload_tasks, daemon=True).start()
-        
-        return jsonify({"success": True, "message": f"✅ تم رفع {uploaded} ملف بنجاح وجاري تثبيت المكتبات وتشغيل السيرفر!"})
-    return jsonify({"success": False, "message": "لم يتم اختيار أي ملفات للرفع"})
-
-@app.route('/api/files/delete/<folder>', methods=['POST'])
-def delete_files(folder):
-    if "email" not in session:
-        return jsonify({"success": False}), 401
-    srv = db["servers"].get(folder)
-    if not srv or srv["owner"] != session["email"]:
-        return jsonify({"success": False})
-    
-    data = request.get_json() or {}
-    names = data.get("names", data.get("name", []))
-    if isinstance(names, str):
-        names = [names]
-    
-    deleted = 0
-    for name in names:
-        if name and '..' not in name:
-            fpath = os.path.join(srv["path"], name)
-            try:
-                if os.path.isdir(fpath):
-                    shutil.rmtree(fpath)
-                elif os.path.exists(fpath):
-                    os.remove(fpath)
-                deleted += 1
-            except Exception:
-                pass
-    return jsonify({"success": True, "message": f"🗑 تم حذف {deleted} ملف بنجاح"})
-
-@app.route('/api/files/create/<folder>', methods=['POST'])
-def create_file_api(folder):
-    if "email" not in session:
-        return jsonify({"success": False}), 401
-    srv = db["servers"].get(folder)
-    if not srv or srv["owner"] != session["email"]:
-        return jsonify({"success": False})
-    
-    data = request.get_json() or {}
-    filename = data.get("filename", "").strip()
-    if not filename or '..' in filename:
-        return jsonify({"success": False, "message": "اسم الملف غير صالح"})
-    
-    fpath = os.path.join(srv["path"], filename)
-    try:
-        with open(fpath, 'w', encoding='utf-8') as f:
-            f.write(data.get("content", ""))
-        return jsonify({"success": True, "message": f"✅ تم إنشاء الملف {filename} بنجاح"})
-    except Exception as e:
-        return jsonify({"success": False, "message": str(e)})
-
-@app.route('/api/files/rename/<folder>', methods=['POST'])
-def rename_file(folder):
-    if "email" not in session:
-        return jsonify({"success": False}), 401
-    srv = db["servers"].get(folder)
-    if not srv or srv["owner"] != session["email"]:
-        return jsonify({"success": False})
-    
-    data = request.get_json() or {}
-    old_name = data.get("old_name", "").strip()
-    new_name = data.get("new_name", "").strip()
-    if '..' in old_name or '..' in new_name:
-        return jsonify({"success": False})
-    
-    old_path = os.path.join(srv["path"], old_name)
-    new_path = os.path.join(srv["path"], new_name)
-    if not os.path.exists(old_path):
-        return jsonify({"success": False, "message": "الملف غير موجود"})
-    try:
-        os.rename(old_path, new_path)
-        return jsonify({"success": True, "message": f"✅ تم تغيير اسم الملف بنجاح"})
-    except Exception as e:
-        return jsonify({"success": False, "message": str(e)})
-
-@app.route('/api/files/unzip/<folder>/<path:filename>', methods=['POST'])
-def unzip_file(folder, filename):
-    if "email" not in session:
-        return jsonify({"success": False}), 401
-    srv = db["servers"].get(folder)
-    if not srv or srv["owner"] != session["email"]:
-        return jsonify({"success": False})
-    
-    zip_path = os.path.join(srv["path"], filename)
-    if not os.path.exists(zip_path):
-        return jsonify({"success": False, "message": "الملف المضغوط غير موجود"})
-    try:
-        with zipfile.ZipFile(zip_path, 'r') as zf:
-            zf.extractall(srv["path"])
-        return jsonify({"success": True, "message": f"✅ تم فك ضغط الملف بنجاح"})
-    except Exception:
-        return jsonify({"success": False, "message": "فشل فك ضغط الملف"})
-
-@app.route('/api/server/set-startup/<folder>', methods=['POST'])
-def set_startup_file(folder):
-    if "email" not in session:
-        return jsonify({"success": False}), 401
-    srv = db["servers"].get(folder)
-    if not srv or srv["owner"] != session["email"]:
-        return jsonify({"success": False})
-    
-    data = request.get_json() or {}
-    filename = data.get("filename", "").strip()
-    if not filename or '..' in filename:
-        return jsonify({"success": False})
-    
-    srv["startup_file"] = filename
-    save_db(db)
-    return jsonify({"success": True, "message": f"✅ تم تعيين ملف التشغيل الرئيسي إلى {filename}"})
-
-# ============== API البوت الخارجي ==============
 @app.route('/api/bot/verify', methods=['POST'])
 def bot_verify():
-    data = request.get_json() or {}
+    data = request.get_json()
     api_key = data.get('api_key', '').strip()
     if not api_key:
         return jsonify({"success": False})
@@ -1003,9 +662,9 @@ def bot_verify():
         return jsonify({"success": False})
     return jsonify({
         "success": True,
-        "email": email,
+        "username": email,
         "is_admin": is_admin(email),
-        "max_servers": user.get("max_servers", 10)
+        "max_servers": user.get("max_servers", 2)
     })
 
 @app.route('/api/bot/servers', methods=['GET'])
@@ -1025,13 +684,14 @@ def bot_list_servers():
                 "title": srv["name"],
                 "status": srv.get("status", "Stopped"),
                 "port": srv.get("port", "N/A"),
-                "server_type": srv.get("server_type", "Python")
+                "type": srv.get("server_type", "Python"),
+                "uptime": uptime_str(srv.get("start_time")) if srv.get("status") == "Running" else "0 ثانية"
             })
     return jsonify({"success": True, "servers": user_servers})
 
 @app.route('/api/bot/server/action', methods=['POST'])
 def bot_server_action():
-    data = request.get_json() or {}
+    data = request.get_json()
     api_key = data.get('api_key')
     folder = data.get('folder')
     action = data.get('action')
@@ -1052,6 +712,13 @@ def bot_server_action():
         return jsonify({"success": True})
     elif action == "restart":
         restart_server(folder)
+        return jsonify({"success": True})
+    elif action == "delete":
+        stop_server_process(folder)
+        if os.path.exists(srv["path"]):
+            shutil.rmtree(srv["path"], ignore_errors=True)
+        del db["servers"][folder]
+        save_db(db)
         return jsonify({"success": True})
     return jsonify({"success": False})
 
@@ -1078,8 +745,49 @@ def bot_console():
             pass
     return jsonify({"success": True, "logs": logs})
 
-# ============== التشغيل ==============
+@app.route('/api/bot/errors', methods=['GET'])
+def bot_errors():
+    api_key = request.args.get('api_key')
+    folder = request.args.get('folder')
+    if not api_key or not folder:
+        return jsonify({"success": False}), 400
+    email, _ = get_user_by_api_key(api_key)
+    if not email:
+        return jsonify({"success": False}), 401
+    srv = db["servers"].get(folder)
+    if not srv or srv["owner"] != email:
+        return jsonify({"success": False}), 403
+    
+    error_path = os.path.join(srv["path"], "errors.log")
+    errors = "✅ لا توجد أخطاء"
+    if os.path.exists(error_path):
+        try:
+            with open(error_path, 'r', encoding='utf-8', errors='ignore') as f:
+                errors = f.read()[-3000:]
+        except Exception:
+            pass
+    return jsonify({"success": True, "errors": errors if errors else "✅ لا توجد أخطاء"})
+
+@app.route('/api/bot/install', methods=['POST'])
+def bot_install():
+    data = request.get_json()
+    api_key = data.get('api_key')
+    folder = data.get('folder')
+    if not api_key or not folder:
+        return jsonify({"success": False}), 400
+    email, _ = get_user_by_api_key(api_key)
+    if not email:
+        return jsonify({"success": False}), 401
+    srv = db["servers"].get(folder)
+    if not srv or srv["owner"] != email:
+        return jsonify({"success": False}), 403
+    
+    if srv.get("server_type") == "Node.js":
+        threading.Thread(target=auto_install_node_deps, args=(srv["path"], open(os.path.join(srv["path"], "out.log"), "id" if False else "a", encoding='utf-8')), daemon=True).start()
+    else:
+        threading.Thread(target=auto_install_deps, args=(srv["path"], open(os.path.join(srv["path"], "out.log"), "a", encoding='utf-8')), daemon=True).start()
+    return jsonify({"success": True, "message": "📦 بدأ تثبيت المكتبات"})
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=False, threaded=True)
-
