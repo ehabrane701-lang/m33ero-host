@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>𝑰𝑪𝑶 | منصة الاستضافة الخارقة والذكية</title>
+    <title> & 𝗘𝗛𝗔𝗕𝗔𝗜𝗛𝗔𝗪𝗕𝗔𝗡𝗜 | منصة الاستضافة الخارقة والذكية</title>
     <!-- Fonts and Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -26,6 +26,7 @@
             color: #f8fafc;
             direction: rtl;
             font-size: 14px;
+            transition: background 0.25s ease, color 0.25s ease;
         }
 
         /* ========== VARIABLES ========== */
@@ -194,11 +195,6 @@
             display: none;
         }
         .form-error.show { display: block; }
-        .form-info {
-            color: var(--gray-400);
-            font-size: 11px;
-            margin-top: 4px;
-        }
         .captcha-box {
             display: flex;
             align-items: center;
@@ -874,49 +870,6 @@
         }
         .modal-close:hover { background: var(--danger); }
 
-        /* ========== DELETED PAGE ========== */
-        .deleted-page {
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            padding: 30px;
-        }
-        .deleted-icon {
-            font-size: 64px;
-            color: var(--danger);
-            margin-bottom: 20px;
-        }
-        .deleted-title {
-            font-size: 36px;
-            font-weight: 700;
-            margin-bottom: 12px;
-            color: #f8fafc;
-        }
-        .deleted-message {
-            font-size: 16px;
-            color: var(--gray-400);
-            max-width: 550px;
-            line-height: 1.7;
-            margin-bottom: 28px;
-        }
-        .deleted-btn {
-            background: linear-gradient(135deg, var(--primary), var(--accent));
-            color: white;
-            padding: 12px 36px;
-            border-radius: var(--radius-md);
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 14px;
-            transition: var(--transition);
-        }
-        .deleted-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
-        }
-
         /* ========== RESPONSIVE ========== */
         @media (max-width: 768px) {
             body { padding: 12px; }
@@ -957,7 +910,7 @@
     <!-- Login Page -->
     <div class="login-wrapper" id="loginContainer">
         <div class="login-header">
-            <h1>منصة ICO الخارقة</h1>
+            <h1> & 𝗘𝗛𝗔𝗕𝗔𝗜𝗛𝗔𝗪𝗕𝗔𝗡𝗜</h1>
             <p>بواسطة Y_20_20 | استضافة متكاملة (HTML, JS, PHP, Python)</p>
         </div>
         <div class="login-tabs">
@@ -1021,7 +974,7 @@
             <div class="logo-area">
                 <div class="logo-icon"><i class="fas fa-rocket"></i></div>
                 <div class="logo-text">
-                    <h1>Y_20_20</h1>
+                    <h1>𝗘𝗛𝗔𝗕𝗔𝗜𝗛𝗔𝗪𝗕𝗔𝗡𝗜 & ICO</h1>
                     <p>منصة استضافة خارقة وذكية</p>
                 </div>
             </div>
@@ -1182,19 +1135,19 @@
                 <a href="https://t.me/Aehabbb" target="_blank"><i class="fab fa-telegram-plane"></i> القناة الرسمية</a>
             </div>
             <div class="copyright">
-                © 2026 Y_20_20 - جميع الحقوق محفوظة | منصة ICO الخارقة
+                © 2026 Y_20_20 - جميع الحقوق محفوظة | منصة ICO & 𝗘𝗛𝗔𝗕𝗔𝗜𝗛𝗔𝗪𝗕𝗔𝗡𝗜 الخارقة
             </div>
         </footer>
     </div>
 
     <script>
         (function() {
-            // ==================== Data DB & Session ====================
-            const DB_USERS = 'ico_users_v11';
+            // ==================== Data DB & Session Integration (مفاتيح متوافقة بالكامل) ====================
+            const DB_USERS = 'ico_wispbyte_users_db';
             const DB_SITES = 'ico_sites_v11';
             const DB_DELETED_SITES = 'ico_deleted_sites_v11';
             const DB_ADMIN = 'ico_admin_config_v11';
-            const DB_SESSION = 'ico_session_v11';
+            const DB_SESSION = 'ico_wispbyte_active_session';
 
             let usersDatabase = JSON.parse(localStorage.getItem(DB_USERS)) || {};
             let sitesDatabase = JSON.parse(localStorage.getItem(DB_SITES)) || {};
@@ -1659,20 +1612,17 @@
                     return;
                 }
 
-                // حفظ الحساب الجديد في القاعدة
                 usersDatabase[username] = { username, email, password, created: new Date().toISOString(), plan: null };
                 localStorage.setItem(DB_USERS, JSON.stringify(usersDatabase));
 
                 showToast('✅ تم إنشاء الحساب بنجاح! جاري تحويلك لتسجيل الدخول...', 'success');
 
-                // مسح وتفريغ حقول التسجيل
                 E.registerUsername.value = '';
                 E.registerEmail.value = '';
                 E.registerPassword.value = '';
                 E.registerCaptcha.value = '';
                 makeCaptcha();
 
-                // التبديل تلقائياً إلى تاب تسجيل الدخول وتعبئة البريد/المستخدم للراحة
                 setTimeout(() => {
                     document.querySelector('.login-tab[data-tab="login"]').click();
                     E.loginUsername.value = username;
