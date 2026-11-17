@@ -102,6 +102,14 @@
             transform: translateY(-2px);
             box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4);
         }
+        .btn-success {
+            background: linear-gradient(135deg, var(--success), #059669);
+            color: white;
+        }
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+        }
 
         /* ========== LOGIN WRAPPER ========== */
         .login-wrapper {
@@ -460,7 +468,7 @@
             box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
         }
 
-        /* ========== SERVERS DASHBOARD (NEW & ENHANCED) ========== */
+        /* ========== SERVERS DASHBOARD ========== */
         .servers-section { padding: 0 24px 24px; }
         .server-creator-box {
             background: rgba(30, 41, 59, 0.85);
@@ -483,7 +491,6 @@
             box-shadow: var(--shadow-md);
             border: 1px solid rgba(255, 255, 255, 0.12);
             transition: var(--transition);
-            cursor: pointer;
             position: relative;
         }
         .server-card:hover {
@@ -505,7 +512,7 @@
             box-shadow: 0 0 10px var(--success);
         }
 
-        /* ========== SERVER DASHBOARD VIEW (IMAGE COMPLIANT) ========== */
+        /* ========== SERVER DASHBOARD VIEW (MATCHES IMAGES) ========== */
         .server-dash-view {
             background: rgba(30, 41, 59, 0.9);
             margin: 0 24px 24px;
@@ -535,13 +542,14 @@
             font-family: monospace;
             padding: 16px;
             border-radius: var(--radius-md);
-            height: 180px;
+            height: 220px;
             overflow-y: auto;
             font-size: 13px;
             border: 1px solid rgba(255, 255, 255, 0.1);
             margin-top: 16px;
             direction: ltr;
             text-align: left;
+            white-space: pre-wrap;
         }
 
         /* ========== FILES GRID ========== */
@@ -609,29 +617,17 @@
             gap: 4px;
             font-size: 11px;
         }
-        .file-action.view {
-            background: rgba(255, 255, 255, 0.08);
-            color: var(--gray-200);
-        }
-        .file-action.view:hover:not(:disabled) {
-            background: var(--primary);
-            color: white;
-        }
-        .file-action.delete {
-            background: rgba(239, 68, 68, 0.1);
-            color: var(--danger);
-        }
-        .file-action.delete:hover {
-            background: var(--danger);
-            color: white;
-        }
+        .file-action.view { background: rgba(255, 255, 255, 0.08); color: var(--gray-200); }
+        .file-action.view:hover { background: var(--primary); color: white; }
+        .file-action.delete { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
+        .file-action.delete:hover { background: var(--danger); color: white; }
 
         /* ========== UPLOAD AREA ========== */
         .upload-area {
-            margin: 0 24px 24px;
+            margin: 0 0 24px 0;
             border: 3px dashed rgba(255, 255, 255, 0.2);
             border-radius: var(--radius-lg);
-            padding: 36px;
+            padding: 30px;
             text-align: center;
             background: rgba(30, 41, 59, 0.5);
             transition: var(--transition);
@@ -641,48 +637,25 @@
             border-color: var(--primary-light);
             background: rgba(30, 41, 59, 0.8);
         }
-        .upload-area.dragover {
-            border-color: var(--success);
-            background: rgba(16, 185, 129, 0.1);
-        }
         .upload-icon {
-            font-size: 48px;
+            font-size: 42px;
             color: var(--primary-light);
-            margin-bottom: 12px;
-        }
-        .upload-area h3 {
-            font-size: 20px;
-            color: #f8fafc;
-            margin-bottom: 6px;
-        }
-        .upload-area p {
-            color: var(--gray-400);
-            font-size: 13px;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
         }
         .file-input-label {
             background: linear-gradient(135deg, var(--primary), var(--accent));
             color: white;
-            padding: 10px 28px;
+            padding: 10px 24px;
             border-radius: var(--radius-md);
             font-weight: 600;
-            font-size: 14px;
+            font-size: 13px;
             cursor: pointer;
             display: inline-block;
             transition: var(--transition);
             box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
-        }
-        .file-input-label:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+            margin-top: 10px;
         }
         .file-input { display: none; }
-        .file-name-display {
-            margin-top: 16px;
-            color: var(--primary-light);
-            font-weight: 500;
-            font-size: 13px;
-        }
 
         /* ========== PROGRESS BAR ========== */
         .progress {
@@ -781,7 +754,6 @@
         }
         .result-btn.copy { background: var(--gray-700); color: white; }
         .result-btn.open { background: var(--primary); color: white; }
-        .result-btn.delete { background: var(--danger); color: white; }
         .result-btn:hover {
             transform: translateY(-2px);
             filter: brightness(1.1);
@@ -847,10 +819,7 @@
             gap: 12px;
             margin-top: 24px;
         }
-        .footer-links {
-            display: flex;
-            gap: 20px;
-        }
+        .footer-links { display: flex; gap: 20px; }
         .footer-links a {
             color: var(--gray-400);
             text-decoration: none;
@@ -861,10 +830,7 @@
             gap: 6px;
         }
         .footer-links a:hover { color: var(--primary-light); }
-        .copyright {
-            color: var(--gray-400);
-            font-size: 12px;
-        }
+        .copyright { color: var(--gray-400); font-size: 12px; }
 
         /* ========== TOAST NOTIFICATION ========== */
         .toast {
@@ -934,7 +900,6 @@
         }
         .modal-close:hover { background: var(--danger); }
 
-        /* ========== RESPONSIVE ========== */
         @media (max-width: 768px) {
             body { padding: 12px; }
             .navbar { flex-direction: column; text-align: center; }
@@ -1119,11 +1084,11 @@
             <div class="plans-grid" id="plansGrid"></div>
         </div>
 
-        <!-- Servers Section (NEW FEATURE: Server Selector & Creator) -->
+        <!-- Servers Section -->
         <div class="servers-section hidden" id="serversSection">
             <div class="section-title">
                 <h2><i class="fas fa-server" style="color: var(--primary-light);"></i> إدارة السيرفرات الذكية</h2>
-                <p>قم باختيار نوع السيرفر وتسميته، ثم اضغط إنشاء للبدء في رفع حتى 100 ملف وتشغيل المكاتب تلقائياً</p>
+                <p>اختر نوع السيرفر وسمه، ثم أنشئه للتحكم الكامل، تشغيل البوت عبر تيرمكس، ورفع حتى 100 ملف</p>
             </div>
 
             <!-- Create Server Box -->
@@ -1141,7 +1106,7 @@
                     </div>
                     <div>
                         <label class="form-label">2. اسم السيرفر</label>
-                        <input type="text" id="serverNameInput" class="form-input" placeholder="مثال: MyTelegramBot_Server">
+                        <input type="text" id="serverNameInput" class="form-input" placeholder="مثال: bot-ehab4">
                     </div>
                 </div>
                 <button class="btn btn-primary" id="createServerBtn" style="width: 100%;"><i class="fas fa-rocket"></i> إنشاء السيرفر الآن</button>
@@ -1152,54 +1117,55 @@
             <div class="servers-grid" id="serversGrid"></div>
         </div>
 
-        <!-- Server Dashboard View (Matches Image and Detailed Control) -->
+        <!-- Server Dashboard View (Matching Images Perfectly) -->
         <div class="server-dash-view hidden" id="serverDashView">
             <div class="dash-header">
                 <div>
-                    <h2 id="dashServerTitle" style="font-size: 22px; color: #f8fafc; margin-bottom: 4px;"></h2>
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px;">
+                        <h2 id="dashServerTitle" style="font-size: 22px; color: #f8fafc;"></h2>
+                        <span class="server-status-dot" id="dashStatusDot"></span>
+                        <span id="dashStatusText" style="font-size: 12px; font-weight: 600; color: var(--danger);">متوقف</span>
+                    </div>
                     <p id="dashServerMeta" style="color: var(--gray-400); font-size: 13px;"></p>
                 </div>
                 <div class="dash-controls">
-                    <button class="btn btn-primary" id="dashStartBtn"><i class="fas fa-play"></i> تشغيل البوت / السيرفر</button>
+                    <button class="btn btn-success" id="dashStartBtn"><i class="fas fa-play"></i> تشغيل البوت / السيرفر</button>
                     <button class="btn btn-danger" id="dashStopBtn"><i class="fas fa-stop"></i> إيقاف البوت</button>
+                    <button class="btn btn-outline" id="dashRestartBtn"><i class="fas fa-sync-alt"></i> إعادة التشغيل</button>
                     <button class="btn btn-outline" id="backToServersBtn"><i class="fas fa-arrow-right"></i> العودة للسيرفرات</button>
                 </div>
             </div>
 
-            <!-- Upload Area for up to 100 files -->
-            <div class="upload-area" id="serverUploadArea" style="margin: 0 0 20px 0;">
+            <!-- Upload Area (1 to 100 files) -->
+            <div class="upload-area" id="serverUploadArea">
                 <div class="upload-icon"><i class="fas fa-cloud-upload-alt"></i></div>
-                <h3>رفع ملفات السيرفر (يدعم من 1 إلى 100 ملف دفعة واحدة)</h3>
-                <p>اختر أو اسحب الملفات هنا (يدعم .py, .php, .js, .html, .json, .txt, .env وغيرها)</p>
+                <h3 style="font-size: 16px; color: #f8fafc; margin-bottom: 6px;">رفع ملفات السيرفر (يدعم من 1 إلى 100 ملف دفعة واحدة)</h3>
+                <p style="color: var(--gray-400); font-size: 12px; margin-bottom: 12px;">اختر أو اسحب الملفات هنا (يدعم .py, .php, .js, .html, .json, .txt, .env وغيرها)</p>
                 <label class="file-input-label">
                     <i class="fas fa-folder-open"></i> اختر ملفات متعددة
                     <input type="file" id="multiFilesInput" class="file-input" multiple>
                 </label>
-                <div id="multiFilesCountDisplay" class="file-name-display"></div>
                 <div class="progress hidden" id="serverProgress">
                     <div class="progress-bar" id="serverProgressBar"></div>
                 </div>
             </div>
 
-            <!-- Files Section inside Server -->
-            <div style="margin-bottom: 20px;">
+            <!-- Files Section -->
+            <div style="margin-bottom: 24px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                    <h3 style="font-size: 16px; color: var(--primary-light);"><i class="fas fa-folder-open"></i> الملفات المرفوعة في السيرفر (<span id="filesCountNum">0</span>)</h3>
-                    <button class="btn btn-danger" id="deleteAllServerFilesBtn" style="padding: 6px 12px; font-size: 12px;"><i class="fas fa-trash"></i> حذف جميع الملفات</button>
+                    <h3 style="font-size: 15px; color: var(--primary-light);"><i class="fas fa-folder-open"></i> الملفات المرفوعة (<span id="filesCountNum">0</span>)</h3>
+                    <button class="btn btn-danger" id="deleteAllServerFilesBtn" style="padding: 6px 12px; font-size: 11px;"><i class="fas fa-trash"></i> حذف جميع الملفات</button>
                 </div>
                 <div class="files-grid" id="serverFilesList" style="margin-top: 0;"></div>
             </div>
 
-            <!-- Terminal Console & Packages Installer -->
+            <!-- Terminal Console & Package Installer (Termux Style) -->
             <div style="background: rgba(15, 23, 42, 0.7); padding: 20px; border-radius: var(--radius-md); border: 1px solid rgba(255,255,255,0.08);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
-                    <h3 style="font-size: 15px; color: #f8fafc;"><i class="fas fa-terminal"></i> مجمع المكاتب والتشغيل التلقائي (Packages & Dependencies)</h3>
-                    <button class="btn btn-primary" id="installPackagesBtn" style="padding: 8px 16px; font-size: 13px;"><i class="fas fa-cogs"></i> تشغيل وتثبيت المكاتب تلقائياً</button>
+                    <h3 style="font-size: 15px; color: #f8fafc;"><i class="fas fa-terminal"></i> مجمع المكاتب وتشغيل تيرمكس (Packages & Termux Runner)</h3>
+                    <button class="btn btn-primary" id="installPackagesBtn" style="padding: 8px 16px; font-size: 12px;"><i class="fas fa-cogs"></i> تشغيل وتثبيت المكاتب تلقائياً</button>
                 </div>
-                <div class="console-box" id="consoleOutput">
-                    [System] Server environment initialized successfully.
-                    [System] Ready for file uploads and library installation.
-                </div>
+                <div class="console-box" id="consoleOutput">[System] Termux environment initialized. Ready to execute scripts.</div>
             </div>
         </div>
 
@@ -1223,25 +1189,25 @@
                 <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
                 <div class="stat-info">
                     <h4 id="activeServersStatus">متوقف</h4>
-                    <p>حالة السيرفر</p>
+                    <p>حالة النظام</p>
                 </div>
             </div>
             <div class="stat-card">
                 <div class="stat-icon"><i class="fas fa-hdd"></i></div>
                 <div class="stat-info">
                     <h4 id="remainingSpace">0</h4>
-                    <p>المساحة المتبقية</p>
+                    <p>المساحة المتاحة</p>
                 </div>
             </div>
         </div>
 
         <!-- Result Card -->
         <div class="result-card hidden" id="resultSection">
-            <h3 style="margin-bottom: 16px; font-size: 18px;"><i class="fas fa-link" style="color: var(--primary-light);"></i> رابط وسيرفر الملف</h3>
+            <h3 style="margin-bottom: 16px; font-size: 18px;"><i class="fas fa-link" style="color: var(--primary-light);"></i> رابط وسيرفر الملف المباشر</h3>
             <div class="result-url" id="urlDisplay"></div>
             <div class="result-actions">
                 <button class="result-btn copy" id="copyBtn"><i class="fas fa-copy"></i> نسخ الرابط</button>
-                <button class="result-btn open" id="openBtn"><i class="fas fa-external-link-alt"></i> تشغيل / فتح</button>
+                <button class="result-btn open" id="openBtn"><i class="fas fa-external-link-alt"></i> تشغيل / فتح في نافذة جديدة</button>
             </div>
         </div>
 
@@ -1259,45 +1225,29 @@
 
     <script>
         (function() {
-            // ==================== Data DB & Session Integration ====================
             const DB_USERS = 'ico_wispbyte_users_db';
-            const DB_SERVERS = 'ico_servers_db_v2';
+            const DB_SERVERS = 'ico_servers_db_v3';
             const DB_ADMIN = 'ico_admin_config_v11';
             const DB_SESSION = 'ico_wispbyte_active_session';
 
             let usersDatabase = JSON.parse(localStorage.getItem(DB_USERS)) || {};
             let serversDatabase = JSON.parse(localStorage.getItem(DB_SERVERS)) || {};
-            let adminConfig = JSON.parse(localStorage.getItem(DB_ADMIN)) || {
-                password: 'hossamhossam#11212',
-                mainSiteDisabled: false
-            };
+            let adminConfig = JSON.parse(localStorage.getItem(DB_ADMIN)) || { password: 'hossamhossam#11212' };
             let currentSession = JSON.parse(localStorage.getItem(DB_SESSION)) || { username: null };
 
             let currentUser = currentSession.username || null;
             let isAdmin = false;
             let activeServerId = null;
             let generatedCaptcha = '';
+            let termuxInterval = null;
 
             const plans = {
-                free: { 
-                    name: 'مجانية', price: 'مجاناً', diskSpace: 5 * 1024 * 1024 * 1024, duration: 7, servers: 5, priceStars: 0,
-                    displaySpace: '5 جيجابايت', displayDuration: '7 أيام' 
-                },
-                paid1: { 
-                    name: 'مدفوعة 1', price: '13 ⭐', diskSpace: 10 * 1024 * 1024 * 1024, duration: 30, servers: 15, priceStars: 13,
-                    displaySpace: '10 جيجابايت', displayDuration: '30 يوم' 
-                },
-                paid2: { 
-                    name: 'مدفوعة 2', price: '15 ⭐', diskSpace: 15 * 1024 * 1024 * 1024, duration: 50, servers: 30, priceStars: 15,
-                    displaySpace: '15 جيجابايت', displayDuration: '50 يوم' 
-                },
-                unlimited: { 
-                    name: 'غير محدودة', price: '100 ⭐', diskSpace: Infinity, duration: Infinity, servers: 100, priceStars: 100,
-                    displaySpace: 'غير محدود', displayDuration: 'مدى الحياة' 
-                }
+                free: { name: 'مجانية', price: 'مجاناً', diskSpace: 5 * 1024 * 1024 * 1024, duration: 7, servers: 5, priceStars: 0, displaySpace: '5 جيجابايت', displayDuration: '7 أيام' },
+                paid1: { name: 'مدفوعة 1', price: '13 ⭐', diskSpace: 10 * 1024 * 1024 * 1024, duration: 30, servers: 15, priceStars: 13, displaySpace: '10 جيجابايت', displayDuration: '30 يوم' },
+                paid2: { name: 'مدفوعة 2', price: '15 ⭐', diskSpace: 15 * 1024 * 1024 * 1024, duration: 50, servers: 30, priceStars: 15, displaySpace: '15 جيجابايت', displayDuration: '50 يوم' },
+                unlimited: { name: 'غير محدودة', price: '100 ⭐', diskSpace: Infinity, duration: Infinity, servers: 100, priceStars: 100, displaySpace: 'غير محدود', displayDuration: 'مدى الحياة' }
             };
 
-            // ==================== DOM Elements ====================
             const E = {
                 toast: document.getElementById('toast'),
                 toastIcon: document.getElementById('toastIcon'),
@@ -1369,13 +1319,14 @@
                 serversGrid: document.getElementById('serversGrid'),
                 serverDashView: document.getElementById('serverDashView'),
                 dashServerTitle: document.getElementById('dashServerTitle'),
+                dashStatusDot: document.getElementById('dashStatusDot'),
+                dashStatusText: document.getElementById('dashStatusText'),
                 dashServerMeta: document.getElementById('dashServerMeta'),
                 dashStartBtn: document.getElementById('dashStartBtn'),
                 dashStopBtn: document.getElementById('dashStopBtn'),
+                dashRestartBtn: document.getElementById('dashRestartBtn'),
                 backToServersBtn: document.getElementById('backToServersBtn'),
-                serverUploadArea: document.getElementById('serverUploadArea'),
                 multiFilesInput: document.getElementById('multiFilesInput'),
-                multiFilesCountDisplay: document.getElementById('multiFilesCountDisplay'),
                 serverProgress: document.getElementById('serverProgress'),
                 serverProgressBar: document.getElementById('serverProgressBar'),
                 filesCountNum: document.getElementById('filesCountNum'),
@@ -1403,34 +1354,19 @@
 
             function showToast(message, type = 'success') {
                 E.toastText.textContent = message;
-                E.toastIcon.innerHTML = type === 'success' ? '<i class="fas fa-check-circle"></i>' : 
-                                        type === 'error' ? '<i class="fas fa-exclamation-circle"></i>' : 
-                                        '<i class="fas fa-info-circle"></i>';
+                E.toastIcon.innerHTML = type === 'success' ? '<i class="fas fa-check-circle"></i>' : type === 'error' ? '<i class="fas fa-exclamation-circle"></i>' : '<i class="fas fa-info-circle"></i>';
                 E.toast.className = 'toast show';
                 if (type === 'error') E.toast.classList.add('error');
                 else E.toast.classList.remove('error');
                 setTimeout(() => E.toast.classList.remove('show'), 4000);
             }
 
-            function showAdminMessage(message, isError = false) {
-                E.adminMessage.textContent = message;
-                E.adminMessage.style.display = 'block';
-                E.adminMessage.style.color = isError ? 'var(--danger)' : 'var(--success)';
-                setTimeout(() => E.adminMessage.style.display = 'none', 5000);
-            }
-
-            function validateUsername(username) { return !/[\u0600-\u06FF]/.test(username); }
-            function validatePassword(password) { return !/[\u0600-\u06FF]/.test(password); }
-            function validateEmail(email) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email); }
-
             function saveSession(username) {
                 currentSession = { username };
                 localStorage.setItem(DB_SESSION, JSON.stringify(currentSession));
             }
 
-            function clearSession() {
-                localStorage.removeItem(DB_SESSION);
-            }
+            function clearSession() { localStorage.removeItem(DB_SESSION); }
 
             function formatBytes(bytes) {
                 if (bytes === Infinity) return 'غير محدود';
@@ -1446,8 +1382,7 @@
                 if (!user || !user.plan) return;
 
                 const userServers = Object.values(serversDatabase).filter(s => s.owner === currentUser);
-                let totalFiles = 0;
-                let activeCount = 0;
+                let totalFiles = 0, activeCount = 0;
                 userServers.forEach(s => {
                     totalFiles += (s.files || []).length;
                     if (s.isRunning) activeCount++;
@@ -1455,7 +1390,7 @@
 
                 E.totalServersCount.textContent = userServers.length;
                 E.totalFilesCount.textContent = totalFiles;
-                E.activeServersStatus.textContent = activeCount > 0 ? `${activeCount} نشط` : 'متوقف';
+                E.activeServersStatus.textContent = activeCount > 0 ? `${activeCount} نشط شغال` : 'متوقف';
                 E.remainingSpace.textContent = user.plan.diskSpace === Infinity ? 'غير محدود' : formatBytes(user.plan.diskSpace);
             }
 
@@ -1497,17 +1432,14 @@
                 const user = usersDatabase[username];
                 if (!user) return;
 
-                user.plan = {
-                    key: planKey, name: plan.name, startDate: new Date().toISOString(), duration: plan.duration,
-                    diskSpace: plan.diskSpace, maxServers: plan.servers
-                };
+                user.plan = { key: planKey, name: plan.name, startDate: new Date().toISOString(), duration: plan.duration, diskSpace: plan.diskSpace, maxServers: plan.servers };
                 usersDatabase[username] = user;
                 localStorage.setItem(DB_USERS, JSON.stringify(usersDatabase));
 
                 if (username === currentUser) {
                     showWelcomeScreen(plan);
                 } else {
-                    showAdminMessage(`✅ تمت إضافة خطة ${plan.name} للمستخدم ${username} بنجاح`);
+                    showToast(`✅ تمت إضافة خطة ${plan.name} للمستخدم ${username}`, 'success');
                 }
             }
 
@@ -1520,9 +1452,8 @@
                 E.welcomeMessage.innerHTML = `
                     <i class="fas fa-star" style="color: #fbbf24;"></i> خطة: ${plan.name}<br>
                     <i class="fas fa-hdd" style="color: var(--success);"></i> المساحة: ${plan.displaySpace}<br>
-                    <i class="fas fa-clock" style="color: var(--accent);"></i> المدة: ${plan.displayDuration}<br>
-                    <i class="fas fa-server" style="color: var(--primary-light);"></i> السيرفرات المتاحة: ${plan.servers} سيرفرات<br><br>
-                    <span style="font-size: 13px; background: rgba(255,255,255,0.1); padding: 8px 16px; border-radius: 40px;">🚀 جاهز تماماً لإنشاء السيرفرات ورفع الملفات حتى 100 ملف!</span>
+                    <i class="fas fa-clock" style="color: var(--accent);"></i> المدة: ${plan.displayDuration}<br><br>
+                    <span style="font-size: 13px; background: rgba(255,255,255,0.1); padding: 8px 16px; border-radius: 40px;">🚀 جاهز تماماً لإنشاء السيرفرات وتشغيل تيرمكس ورفع حتى 100 ملف!</span>
                 `;
             }
 
@@ -1536,7 +1467,7 @@
                         else if (server.type === 'html') icon = 'fas fa-globe';
 
                         return `
-                            <div class="server-card" data-id="${server.id}">
+                            <div class="server-card">
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                                     <div class="file-icon" style="margin-bottom:0;"><i class="${icon}"></i></div>
                                     <span class="server-status-dot ${server.isRunning ? 'active' : ''}"></span>
@@ -1546,7 +1477,7 @@
                                     النوع: ${server.type.toUpperCase()} | الملفات: ${(server.files || []).length}
                                 </div>
                                 <button class="btn btn-primary" style="width: 100%; padding: 8px; font-size: 12px;" onclick="openServerDash('${server.id}')">
-                                    <i class="fas fa-cogs"></i> إدارة السيرفر والملفات
+                                    <i class="fas fa-cogs"></i> إدارة السيرفر والتشغيل
                                 </button>
                             </div>
                         `;
@@ -1563,7 +1494,6 @@
                 updateStats();
             }
 
-            // Expose globally for inline onclick
             window.openServerDash = function(serverId) {
                 activeServerId = serverId;
                 const server = serversDatabase[serverId];
@@ -1572,11 +1502,28 @@
                 E.serversSection.classList.add('hidden');
                 E.serverDashView.classList.remove('hidden');
                 E.dashServerTitle.textContent = server.name;
-                E.dashServerMeta.textContent = `نوع السيرفر: ${server.type.toUpperCase()} | تم الإنشاء: ${new Date(server.created).toLocaleDateString('ar-EG')}`;
+                E.dashServerMeta.textContent = `نوع السيرفر: ${server.type.toUpperCase()} | تاريخ الإنشاء: ${new Date(server.created).toLocaleDateString('ar-EG')}`;
                 
+                updateServerStatusUI(server.isRunning);
                 renderServerFiles();
-                updateConsoleStatus();
+                
+                // عرض رابط المشاركة المباشر للملفات
+                const directUrl = `${window.location.origin}${window.location.pathname}?site=${serverId}`;
+                E.urlDisplay.textContent = directUrl;
+                E.resultSection.classList.remove('hidden');
             };
+
+            function updateServerStatusUI(isRunning) {
+                if (isRunning) {
+                    E.dashStatusDot.classList.add('active');
+                    E.dashStatusText.textContent = 'شغال ومتصل ✅';
+                    E.dashStatusText.style.color = 'var(--success)';
+                } else {
+                    E.dashStatusDot.classList.remove('active');
+                    E.dashStatusText.textContent = 'متوقف ⏹️';
+                    E.dashStatusText.style.color = 'var(--danger)';
+                }
+            }
 
             function renderServerFiles() {
                 const server = serversDatabase[activeServerId];
@@ -1600,8 +1547,8 @@
                     `).join('');
                 } else {
                     E.serverFilesList.innerHTML = `
-                        <div style="grid-column: 1/-1; text-align: center; padding: 30px; background: rgba(15,23,42,0.4); border-radius: var(--radius-md);">
-                            <p style="color: var(--gray-400); font-size: 13px;">لا توجد ملفات مرفوعة في هذا السيرفر حالياً (يمكنك رفع من 1 إلى 100 ملف دفعة واحدة).</p>
+                        <div style="grid-column: 1/-1; text-align: center; padding: 25px; background: rgba(15,23,42,0.4); border-radius: var(--radius-md);">
+                            <p style="color: var(--gray-400); font-size: 13px;">لا توجد ملفات. يمكنك رفع من 1 إلى 100 ملف دفعة واحدة.</p>
                         </div>
                     `;
                 }
@@ -1631,16 +1578,266 @@
                 return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
             }
 
-            function updateConsoleStatus() {
+            // ==================== Termux Simulation Runner ====================
+            function startTermuxSimulation() {
+                if (termuxInterval) clearInterval(termuxInterval);
                 const server = serversDatabase[activeServerId];
                 if (!server) return;
-                if (server.isRunning) {
-                    E.consoleOutput.innerHTML += `\n[Server] Status: RUNNING. Executing main entry points and listening...`;
-                } else {
-                    E.consoleOutput.innerHTML += `\n[Server] Status: STOPPED.`;
-                }
+
+                E.consoleOutput.innerHTML = `[Termux] Initializing environment for ${server.type.toUpperCase()}...`;
+                let logs = [
+                    `[Termux] Connecting to remote host server container...`,
+                    `[Termux] Downloading required libraries and dependencies packages...`,
+                    `[Success] All libraries compiled and gathered successfully!`,
+                    `[Termux] Starting main entry point file for ${server.name}...`,
+                    `[Server] STATUS: RUNNING (متصل وشغال بنجاح ✅)`
+                ];
+
+                let idx = 0;
+                termuxInterval = setInterval(() => {
+                    if (idx < logs.length) {
+                        E.consoleOutput.innerHTML += `\n${logs[idx]}`;
+                        E.consoleOutput.scrollTop = E.consoleOutput.scrollHeight;
+                        idx++;
+                    } else {
+                        // محاكاة استلام رسائل وبوتات تليجرام مستمرة تماماً مثل الصورة
+                        let timestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
+                        E.consoleOutput.innerHTML += `\n${timestamp} | INFO | httpkap | Request: POST https://api.telegram.org/bot/getUpdates "HTTP/1.1 200 OK"`;
+                        E.consoleOutput.scrollTop = E.consoleOutput.scrollHeight;
+                    }
+                }, 1500);
+            }
+
+            function stopTermuxSimulation() {
+                if (termuxInterval) clearInterval(termuxInterval);
+                E.consoleOutput.innerHTML += `\n[Termux] Server stopped by user. STATUS: STOPPED (متوقف ⏹️)`;
                 E.consoleOutput.scrollTop = E.consoleOutput.scrollHeight;
             }
+
+            // ==================== Event Listeners ====================
+            E.controlPlanBtn.addEventListener('click', () => {
+                E.welcomeSection.classList.add('hidden');
+                E.serversSection.classList.remove('hidden');
+                E.stats.classList.remove('hidden');
+                loadUserServers();
+            });
+
+            E.backToServersBtn.addEventListener('click', () => {
+                if (termuxInterval) clearInterval(termuxInterval);
+                E.serverDashView.classList.add('hidden');
+                E.serversSection.classList.remove('hidden');
+                E.resultSection.classList.add('hidden');
+                loadUserServers();
+            });
+
+            // Login
+            E.loginSubmit.addEventListener('click', () => {
+                const loginInput = E.loginUsername.value.trim();
+                const password = E.loginPassword.value;
+                if (!loginInput || !password) {
+                    showToast('أدخل بيانات الدخول بشكل كامل', 'error');
+                    return;
+                }
+
+                let foundUsername = null;
+                if (usersDatabase[loginInput]) {
+                    foundUsername = loginInput;
+                } else {
+                    for (let [uname, udata] of Object.entries(usersDatabase)) {
+                        if (udata.email && udata.email.toLowerCase() === loginInput.toLowerCase()) {
+                            foundUsername = uname;
+                            break;
+                        }
+                    }
+                }
+
+                if (!foundUsername || usersDatabase[foundUsername].password !== password) {
+                    showToast('اسم المستخدم أو كلمة المرور غير صحيحة', 'error');
+                    return;
+                }
+
+                currentUser = foundUsername;
+                isAdmin = false;
+                saveSession(foundUsername);
+                E.loginContainer.classList.add('hidden');
+                E.mainContainer.classList.remove('hidden');
+                E.userNameDisplay.textContent = foundUsername;
+                renderPlans();
+                checkUserPlanAndShowContent();
+                showToast(`مرحباً بك ${foundUsername}!`, 'success');
+            });
+
+            // Register
+            E.registerSubmit.addEventListener('click', () => {
+                const username = E.registerUsername.value.trim();
+                const email = E.registerEmail.value.trim();
+                const password = E.registerPassword.value;
+                const captcha = E.registerCaptcha.value.trim();
+
+                if (!username || !email || !password || captcha !== generatedCaptcha) {
+                    showToast('تأكد من صحة البيانات ورمز التحقق', 'error');
+                    return;
+                }
+                if (usersDatabase[username]) {
+                    showToast('اسم المستخدم موجود مسبقاً', 'error');
+                    return;
+                }
+
+                usersDatabase[username] = { username, email, password, created: new Date().toISOString(), plan: null };
+                localStorage.setItem(DB_USERS, JSON.stringify(usersDatabase));
+                showToast('✅ تم إنشاء الحساب بنجاح!', 'success');
+                setTimeout(() => {
+                    document.querySelector('.login-tab[data-tab="login"]').click();
+                    E.loginUsername.value = username;
+                    E.loginPassword.value = password;
+                }, 1000);
+            });
+
+            E.logoutBtn.addEventListener('click', () => {
+                clearSession();
+                location.reload();
+            });
+
+            // Admin Modal
+            E.adminAccessBtn.addEventListener('click', () => E.adminModal.classList.add('active'));
+            E.adminClose.addEventListener('click', () => E.adminModal.classList.remove('active'));
+            E.adminLoginBtn.addEventListener('click', () => {
+                if (E.adminPassword.value === adminConfig.password) {
+                    currentUser = 'admin';
+                    isAdmin = true;
+                    saveSession('admin');
+                    E.adminModal.classList.remove('active');
+                    E.loginContainer.classList.add('hidden');
+                    E.mainContainer.classList.remove('hidden');
+                    E.userNameDisplay.textContent = 'أدمن النظام';
+                    E.adminPanel.classList.remove('hidden');
+                    showToast('مرحباً بك في لوحة تحكم الأدمن', 'success');
+                } else {
+                    showToast('كلمة مرور الأدمن خاطئة', 'error');
+                }
+            });
+
+            E.adminPanelBtn.addEventListener('click', () => {
+                if (isAdmin) E.adminPanel.classList.toggle('hidden');
+                else showToast('لأصحاب الصلاحيات فقط', 'error');
+            });
+
+            // Create Server
+            E.createServerBtn.addEventListener('click', () => {
+                const user = usersDatabase[currentUser];
+                if (!user || !user.plan) return showToast('يرجى تفعيل خطة استضافة أولاً', 'error');
+                const sType = E.serverTypeSelect.value;
+                const sName = E.serverNameInput.value.trim() || `Bot_${Date.now().toString().slice(-4)}`;
+
+                const serverId = 'server_' + Date.now();
+                serversDatabase[serverId] = {
+                    id: serverId, owner: currentUser, type: sType, name: sName,
+                    created: new Date().toISOString(), isRunning: false, files: []
+                };
+                localStorage.setItem(DB_SERVERS, JSON.stringify(serversDatabase));
+                E.serverNameInput.value = '';
+                loadUserServers();
+                showToast(`🚀 تم إنشاء سيرفر "${sName}" بنجاح!`, 'success');
+            });
+
+            // Upload 1 to 100 files
+            E.multiFilesInput.addEventListener('change', async function() {
+                const files = this.files;
+                if (!files || files.length === 0) return;
+                const server = serversDatabase[activeServerId];
+                if (!server) return;
+
+                E.serverProgress.classList.remove('hidden');
+                E.serverProgressBar.style.width = '40%';
+
+                let count = 0;
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    const content = await new Promise(res => {
+                        const r = new FileReader();
+                        r.onload = e => res(e.target.result);
+                        r.readAsText(file);
+                    });
+                    server.files.push({ name: file.name, size: file.size, content, date: new Date().toISOString() });
+                    count++;
+                }
+
+                serversDatabase[activeServerId] = server;
+                localStorage.setItem(DB_SERVERS, JSON.stringify(serversDatabase));
+
+                E.serverProgressBar.style.width = '100%';
+                setTimeout(() => {
+                    E.serverProgress.classList.add('hidden');
+                    E.serverProgressBar.style.width = '0%';
+                    renderServerFiles();
+                    showToast(`✅ تم رفع ${count} ملف بنجاح لأي سيرفر كان!`, 'success');
+                    E.multiFilesInput.value = '';
+                }, 500);
+            });
+
+            // Control Buttons
+            E.installPackagesBtn.addEventListener('click', () => {
+                showToast('⚙️ جاري تجميع وتثبيت المكاتب تلقائياً...', 'info');
+                E.consoleOutput.innerHTML += `\n[Packages] Installing pip / npm dependencies automatically...\n[Success] All modules successfully loaded!`;
+                E.consoleOutput.scrollTop = E.consoleOutput.scrollHeight;
+            });
+
+            E.dashStartBtn.addEventListener('click', () => {
+                const server = serversDatabase[activeServerId];
+                if (!server) return;
+                server.isRunning = true;
+                serversDatabase[activeServerId] = server;
+                localStorage.setItem(DB_SERVERS, JSON.stringify(serversDatabase));
+                updateServerStatusUI(true);
+                startTermuxSimulation();
+                showToast('🚀 تم تشغيل البوت والسيرفر بنجاح عبر تيرمكس!', 'success');
+            });
+
+            E.dashStopBtn.addEventListener('click', () => {
+                const server = serversDatabase[activeServerId];
+                if (!server) return;
+                server.isRunning = false;
+                serversDatabase[activeServerId] = server;
+                localStorage.setItem(DB_SERVERS, JSON.stringify(serversDatabase));
+                updateServerStatusUI(false);
+                stopTermuxSimulation();
+                showToast('⏹️ تم إيقاف البوت بنجاح', 'info');
+            });
+
+            E.dashRestartBtn.addEventListener('click', () => {
+                stopTermuxSimulation();
+                setTimeout(() => {
+                    startTermuxSimulation();
+                    showToast('🔄 تم إعادة تشغيل السيرفر بنجاح!', 'success');
+                }, 1000);
+            });
+
+            E.deleteAllServerFilesBtn.addEventListener('click', () => {
+                const server = serversDatabase[activeServerId];
+                if (server && confirm('حذف جميع الملفات؟')) {
+                    server.files = [];
+                    serversDatabase[activeServerId] = server;
+                    localStorage.setItem(DB_SERVERS, JSON.stringify(serversDatabase));
+                    renderServerFiles();
+                    showToast('تم حذف كافة الملفات', 'info');
+                }
+            });
+
+            E.copyBtn.addEventListener('click', () => {
+                navigator.clipboard.writeText(E.urlDisplay.textContent);
+                showToast('📋 تم نسخ الرابط بنجاح', 'success');
+            });
+
+            E.openBtn.addEventListener('click', () => {
+                const server = serversDatabase[activeServerId];
+                if (server && server.files.length > 0) {
+                    const win = window.open('', '_blank');
+                    win.document.write(server.files[0].content);
+                    win.document.close();
+                } else {
+                    showToast('لا توجد ملفات لفتحها', 'error');
+                }
+            });
 
             function checkUserPlanAndShowContent() {
                 const user = usersDatabase[currentUser];
@@ -1659,315 +1856,6 @@
                 }
             }
 
-            // ==================== Event Listeners ====================
-            E.controlPlanBtn.addEventListener('click', () => {
-                E.welcomeSection.classList.add('hidden');
-                E.serversSection.classList.remove('hidden');
-                E.stats.classList.remove('hidden');
-                loadUserServers();
-            });
-
-            E.backToServersBtn.addEventListener('click', () => {
-                E.serverDashView.classList.add('hidden');
-                E.serversSection.classList.remove('hidden');
-                loadUserServers();
-            });
-
-            // Login System
-            E.loginSubmit.addEventListener('click', () => {
-                const loginInput = E.loginUsername.value.trim();
-                const password = E.loginPassword.value;
-                let hasError = false;
-
-                if (!loginInput) { E.loginUsernameError.classList.add('show'); hasError = true; } else E.loginUsernameError.classList.remove('show');
-                if (!password) { E.loginPasswordError.classList.add('show'); hasError = true; } else E.loginPasswordError.classList.remove('show');
-                if (hasError) return;
-
-                let foundUsername = null;
-                if (usersDatabase[loginInput]) {
-                    foundUsername = loginInput;
-                } else {
-                    for (let [uname, udata] of Object.entries(usersDatabase)) {
-                        if (udata.email && udata.email.toLowerCase() === loginInput.toLowerCase()) {
-                            foundUsername = uname;
-                            break;
-                        }
-                    }
-                }
-
-                if (!foundUsername || usersDatabase[foundUsername].password !== password) {
-                    showToast('بيانات الدخول غير صحيحة', 'error');
-                    return;
-                }
-
-                currentUser = foundUsername;
-                isAdmin = false;
-                saveSession(foundUsername);
-                E.loginContainer.classList.add('hidden');
-                E.mainContainer.classList.remove('hidden');
-                E.userNameDisplay.textContent = foundUsername;
-                E.adminPanel.classList.add('hidden');
-                renderPlans();
-                checkUserPlanAndShowContent();
-                showToast(`مرحباً بك مجدداً ${foundUsername}!`, 'success');
-            });
-
-            // Register System
-            E.registerSubmit.addEventListener('click', () => {
-                const username = E.registerUsername.value.trim();
-                const email = E.registerEmail.value.trim();
-                const password = E.registerPassword.value;
-                const captcha = E.registerCaptcha.value.trim();
-                let hasError = false;
-
-                if (!username || !validateUsername(username)) { E.registerUsernameError.classList.add('show'); hasError = true; } else E.registerUsernameError.classList.remove('show');
-                if (!email || !validateEmail(email)) { E.registerEmailError.classList.add('show'); hasError = true; } else E.registerEmailError.classList.remove('show');
-                if (!password || !validatePassword(password)) { E.registerPasswordError.classList.add('show'); hasError = true; } else E.registerPasswordError.classList.remove('show');
-                if (!captcha || captcha !== generatedCaptcha) { E.registerCaptchaError.classList.add('show'); hasError = true; } else E.registerCaptchaError.classList.remove('show');
-                if (hasError) return;
-
-                if (usersDatabase[username]) {
-                    showToast('اسم المستخدم مستخدم مسبقاً، اختر اسماً آخر', 'error');
-                    return;
-                }
-
-                usersDatabase[username] = { username, email, password, created: new Date().toISOString(), plan: null };
-                localStorage.setItem(DB_USERS, JSON.stringify(usersDatabase));
-
-                showToast('✅ تم إنشاء الحساب بنجاح! جاري تحويلك لتسجيل الدخول...', 'success');
-                E.registerUsername.value = '';
-                E.registerEmail.value = '';
-                E.registerPassword.value = '';
-                E.registerCaptcha.value = '';
-                makeCaptcha();
-
-                setTimeout(() => {
-                    document.querySelector('.login-tab[data-tab="login"]').click();
-                    E.loginUsername.value = username;
-                    E.loginPassword.value = password;
-                }, 1000);
-            });
-
-            // Logout
-            E.logoutBtn.addEventListener('click', () => {
-                if (confirm('هل تريد حقاً تسجيل الخروج من المنصة؟')) {
-                    clearSession();
-                    currentUser = null;
-                    isAdmin = false;
-                    E.mainContainer.classList.add('hidden');
-                    E.loginContainer.classList.remove('hidden');
-                    showToast('تم تسجيل الخروج بنجاح', 'info');
-                }
-            });
-
-            // Admin Modal & Panel
-            E.adminAccessBtn.addEventListener('click', () => E.adminModal.classList.add('active'));
-            E.adminClose.addEventListener('click', () => {
-                E.adminModal.classList.remove('active');
-                E.adminPassword.value = '';
-                E.adminPasswordError.classList.remove('show');
-            });
-            E.adminLoginBtn.addEventListener('click', () => {
-                const password = E.adminPassword.value;
-                if (password === adminConfig.password) {
-                    currentUser = 'admin';
-                    isAdmin = true;
-                    saveSession('admin');
-                    E.adminModal.classList.remove('active');
-                    E.loginContainer.classList.add('hidden');
-                    E.mainContainer.classList.remove('hidden');
-                    E.userNameDisplay.textContent = 'أدمن النظام';
-                    E.adminPanel.classList.remove('hidden');
-                    showToast('مرحباً بك في لوحة تحكم الأدمن الخارقة', 'success');
-                } else {
-                    E.adminPasswordError.classList.add('show');
-                }
-            });
-
-            E.adminPanelBtn.addEventListener('click', () => {
-                if (isAdmin) E.adminPanel.classList.toggle('hidden');
-                else showToast('عذراً، هذه الصلاحية خاصة بالأدمن فقط', 'error');
-            });
-
-            // Create Server Workflow
-            E.createServerBtn.addEventListener('click', () => {
-                const user = usersDatabase[currentUser];
-                if (!user || !user.plan) return showToast('يرجى تفعيل خطة استضافة أولاً', 'error');
-                const sType = E.serverTypeSelect.value;
-                const sName = E.serverNameInput.value.trim() || (`Server_${Date.now().toString().slice(-4)}`);
-
-                const serverId = 'server_' + Date.now();
-                serversDatabase[serverId] = {
-                    id: serverId,
-                    owner: currentUser,
-                    type: sType,
-                    name: sName,
-                    created: new Date().toISOString(),
-                    isRunning: false,
-                    files: []
-                };
-                localStorage.setItem(DB_SERVERS, JSON.stringify(serversDatabase));
-                E.serverNameInput.value = '';
-                loadUserServers();
-                showToast(`🚀 تم إنشاء سيرفر "${sName}" بنجاح!`, 'success');
-            });
-
-            // Multi-File Upload Handler (Supports 1 to 100 files)
-            E.multiFilesInput.addEventListener('change', async function() {
-                const files = this.files;
-                if (!files || files.length === 0) return;
-                const server = serversDatabase[activeServerId];
-                if (!server) return;
-
-                E.serverProgress.classList.remove('hidden');
-                E.serverProgressBar.style.width = '30%';
-
-                let uploadedCount = 0;
-                for (let i = 0; i < files.length; i++) {
-                    const file = files[i];
-                    const content = await new Promise(resolve => {
-                        const reader = new FileReader();
-                        reader.onload = e => resolve(e.target.result);
-                        reader.readAsText(file);
-                    });
-
-                    server.files.push({
-                        name: file.name,
-                        size: file.size,
-                        content: content,
-                        date: new Date().toISOString()
-                    });
-                    uploadedCount++;
-                }
-
-                serversDatabase[activeServerId] = server;
-                localStorage.setItem(DB_SERVERS, JSON.stringify(serversDatabase));
-
-                E.serverProgressBar.style.width = '100%';
-                setTimeout(() => {
-                    E.serverProgress.classList.add('hidden');
-                    E.serverProgressBar.style.width = '0%';
-                    renderServerFiles();
-                    showToast(`✅ تم رفع ${uploadedCount} ملف بنجاح إلى السيرفر!`, 'success');
-                    E.multiFilesInput.value = '';
-                }, 400);
-            });
-
-            // Packages Installation & Bot Execution Simulation
-            E.installPackagesBtn.addEventListener('click', () => {
-                const server = serversDatabase[activeServerId];
-                if (!server) return;
-                E.consoleOutput.innerHTML += `\n[System] Installing required dependencies and modules for ${server.type.toUpperCase()}...`;
-                setTimeout(() => {
-                    E.consoleOutput.innerHTML += `\n[Success] All libraries and packages gathered and compiled successfully!`;
-                    E.consoleOutput.scrollTop = E.consoleOutput.scrollHeight;
-                    showToast('تم تجمع المكاتب وتثبيتها بنجاح!', 'success');
-                }, 1000);
-            });
-
-            E.dashStartBtn.addEventListener('click', () => {
-                const server = serversDatabase[activeServerId];
-                if (!server) return;
-                server.isRunning = true;
-                serversDatabase[activeServerId] = server;
-                localStorage.setItem(DB_SERVERS, JSON.stringify(serversDatabase));
-                updateConsoleStatus();
-                showToast(`🚀 تم تشغيل السيرفر "${server.name}" بنجاح!`, 'success');
-            });
-
-            E.dashStopBtn.addEventListener('click', () => {
-                const server = serversDatabase[activeServerId];
-                if (!server) return;
-                server.isRunning = false;
-                serversDatabase[activeServerId] = server;
-                localStorage.setItem(DB_SERVERS, JSON.stringify(serversDatabase));
-                updateConsoleStatus();
-                showToast(`⏹️ تم إيقاف السيرفر "${server.name}" بنجاح`, 'info');
-            });
-
-            E.deleteAllServerFilesBtn.addEventListener('click', () => {
-                const server = serversDatabase[activeServerId];
-                if (server && confirm('هل أنت متأكد من حذف جميع ملفات هذا السيرفر؟')) {
-                    server.files = [];
-                    serversDatabase[activeServerId] = server;
-                    localStorage.setItem(DB_SERVERS, JSON.stringify(serversDatabase));
-                    renderServerFiles();
-                    showToast('تم مسح جميع الملفات بنجاح', 'info');
-                }
-            });
-
-            // Admin panel actions
-            const showAdminSection = (section, label = '') => {
-                E.addPlanSection.classList.add('hidden');
-                E.removePlanSection.classList.add('hidden');
-                E.adminPasswordChangeSection.classList.add('hidden');
-                E.deleteSiteSection.classList.add('hidden');
-                if (section) {
-                    section.classList.remove('hidden');
-                    if (label && E.planSectionLabel) E.planSectionLabel.textContent = label;
-                }
-            };
-
-            let selectedPlanForAdmin = null;
-            E.addPlan1Btn.addEventListener('click', () => { selectedPlanForAdmin = 'paid1'; showAdminSection(E.addPlanSection, 'أدخل اسم المستخدم لإضافة خطة 1'); });
-            E.addPlan2Btn.addEventListener('click', () => { selectedPlanForAdmin = 'paid2'; showAdminSection(E.addPlanSection, 'أدخل اسم المستخدم لإضافة خطة 2'); });
-            E.addPlan3Btn.addEventListener('click', () => { selectedPlanForAdmin = 'paid1'; showAdminSection(E.addPlanSection, 'أدخل اسم المستخدم لإضافة خطة 3'); });
-            E.addPlanUnlimitedBtn.addEventListener('click', () => { selectedPlanForAdmin = 'unlimited'; showAdminSection(E.addPlanSection, 'أدخل اسم المستخدم لإضافة خطة غير محدودة'); });
-
-            E.confirmAddPlanBtn.addEventListener('click', () => {
-                const username = E.planUsernameInput.value.trim();
-                if (!username || !usersDatabase[username]) return showAdminMessage('المستخدم غير موجود', true);
-                if (selectedPlanForAdmin) {
-                    activatePlanForUser(username, selectedPlanForAdmin);
-                    showAdminSection(null);
-                    E.planUsernameInput.value = '';
-                }
-            });
-
-            E.removePlanBtn.addEventListener('click', () => showAdminSection(E.removePlanSection));
-            E.confirmRemovePlanBtn.addEventListener('click', () => {
-                const username = E.removePlanUsername.value.trim();
-                if (!username || !usersDatabase[username]) return showAdminMessage('المستخدم غير موجود', true);
-                if (confirm(`إزالة خطط وملفات ${username}؟`)) {
-                    usersDatabase[username].plan = null;
-                    localStorage.setItem(DB_USERS, JSON.stringify(usersDatabase));
-                    Object.keys(serversDatabase).forEach(id => { if (serversDatabase[id].owner === username) delete serversDatabase[id]; });
-                    localStorage.setItem(DB_SERVERS, JSON.stringify(serversDatabase));
-                    showAdminMessage(`✅ تم بنجاح`);
-                    showAdminSection(null);
-                    E.removePlanUsername.value = '';
-                }
-            });
-
-            E.disableAllSitesBtn.addEventListener('click', () => {
-                if (confirm('حذف جميع السيرفرات؟')) {
-                    serversDatabase = {};
-                    localStorage.setItem(DB_SERVERS, JSON.stringify(serversDatabase));
-                    showAdminMessage('تم مسح جميع السيرفرات');
-                }
-            });
-
-            E.disableMainSiteBtn.addEventListener('click', () => {
-                adminConfig.mainSiteDisabled = !adminConfig.mainSiteDisabled;
-                localStorage.setItem(DB_ADMIN, JSON.stringify(adminConfig));
-                showAdminMessage(adminConfig.mainSiteDisabled ? 'تم إيقاف المنصة' : 'تم تفعيل المنصة');
-            });
-
-            E.changeAdminPasswordBtn.addEventListener('click', () => showAdminSection(E.adminPasswordChangeSection));
-            E.saveAdminPasswordBtn.addEventListener('click', () => {
-                const newPass = E.newAdminPassword.value.trim();
-                if (!newPass) return showAdminMessage('أدخل كلمة المرور', true);
-                adminConfig.password = newPass;
-                localStorage.setItem(DB_ADMIN, JSON.stringify(adminConfig));
-                showAdminSection(null);
-                showAdminMessage('تم التغيير بنجاح');
-            });
-
-            E.deleteSpecificSiteBtn.addEventListener('click', () => showAdminSection(E.deleteSiteSection));
-            E.confirmDeleteSiteBtn.addEventListener('click', () => {
-                showAdminMessage('تم التحديث');
-            });
-
             // Tabs toggle
             E.tabBtns.forEach(btn => {
                 btn.addEventListener('click', () => {
@@ -1983,8 +1871,16 @@
                 });
             });
 
-            // Initial load check
             window.addEventListener('DOMContentLoaded', () => {
+                const params = new URLSearchParams(window.location.search);
+                const siteId = params.get('site');
+                if (siteId && serversDatabase[siteId] && serversDatabase[siteId].files.length > 0) {
+                    document.open();
+                    document.write(serversDatabase[siteId].files[0].content);
+                    document.close();
+                    return;
+                }
+
                 if (currentSession.username) {
                     currentUser = currentSession.username;
                     if (currentUser === 'admin') {
@@ -1998,7 +1894,6 @@
                         E.loginContainer.classList.add('hidden');
                         E.mainContainer.classList.remove('hidden');
                         E.userNameDisplay.textContent = currentUser;
-                        E.adminPanel.classList.add('hidden');
                         renderPlans();
                         checkUserPlanAndShowContent();
                     }
