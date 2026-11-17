@@ -1,3 +1,4 @@
+
 # app.py - نظام استضافة متطور بصفحة واحدة (Dashboard / Login)
 import os
 import json
@@ -64,10 +65,10 @@ def load_db():
         "servers": {},
         "logs": [],
         "plans": {
-            "free": {"name": "🎁 مجاني", "storage": 512000, "ram": 256, "cpu": 0.5, "max_servers": 2, "price": 0},
-            "4gb": {"name": "💎 4 جيجا", "storage": 4096000, "ram": 1024, "cpu": 1, "max_servers": 5, "price": 5},
-            "10gb": {"name": "💎 10 جيجا", "storage": 10240000, "ram": 2048, "cpu": 2, "max_servers": 10, "price": 10},
-            "40gb": {"name": "💎 40 جيجا", "storage": 40960000, "ram": 4096, "cpu": 4, "max_servers": 20, "price": 25}
+            "free": {"name": "🎁 مجاني", "storage": 512000, "ram": 256, "cpu": 0.5, "max_servers": 10, "price": 0},
+            "4gb": {"name": "💎 4 جيجا", "storage": 4096000, "ram": 1024, "cpu": 1, "max_servers": 20, "price": 5},
+            "10gb": {"name": "💎 10 جيجا", "storage": 10240000, "ram": 2048, "cpu": 2, "max_servers": 50, "price": 10},
+            "40gb": {"name": "💎 40 جيجا", "storage": 40960000, "ram": 4096, "cpu": 4, "max_servers": 100, "price": 25}
         },
         "server_types": ["Python", "Node.js", "PHP", "HTML"]
     }
@@ -181,7 +182,7 @@ def auto_install_deps(srv_path: str, log_file):
     try:
         req = os.path.join(srv_path, "requirements.txt")
         if os.path.exists(req):
-            log_file.write(f"\n📦 تثبيت requirements.txt...\n")
+            log_file.write(f"\n📦 تثبيت requirements.txt تلقائياً...\n")
             log_file.flush()
             proc = subprocess.Popen(
                 [sys.executable, "-m", "pip", "install", "-r", "requirements.txt"],
@@ -191,16 +192,16 @@ def auto_install_deps(srv_path: str, log_file):
                 env=os.environ.copy()
             )
             proc.wait(timeout=180)
-            log_file.write("✅ تم تثبيت المكتبات\n")
+            log_file.write("✅ تم تثبيت جميع المكتبات بنجاح\n")
     except Exception as e:
-        log_file.write(f"\n⚠️ تثبيت تلقائي: {e}\n")
+        log_file.write(f"\n⚠️ خطأ في التثبيت التلقائي للمكتبات: {e}\n")
     log_file.flush()
 
 def auto_install_node_deps(srv_path: str, log_file):
     try:
         package_json = os.path.join(srv_path, "package.json")
         if os.path.exists(package_json):
-            log_file.write(f"\n📦 تثبيت حزم Node.js...\n")
+            log_file.write(f"\n📦 تثبيت حزم Node.js عبر npm...\n")
             log_file.flush()
             proc = subprocess.Popen(
                 ["npm", "install"],
@@ -210,9 +211,9 @@ def auto_install_node_deps(srv_path: str, log_file):
                 env=os.environ.copy()
             )
             proc.wait(timeout=180)
-            log_file.write("✅ تم تثبيت حزم Node.js\n")
+            log_file.write("✅ تم تثبيت حزم Node.js بنجاح\n")
     except Exception as e:
-        log_file.write(f"\n⚠️ تثبيت تلقائي Node.js فشل: {e}\n")
+        log_file.write(f"\n⚠️ فشل تثبيت حزم Node.js: {e}\n")
     log_file.flush()
 
 # ============== تشغيل السيرفر حسب النوع ==============
@@ -223,6 +224,14 @@ def start_server_process(folder):
 
     server_type = srv.get("server_type", "Python")
     
+    # تثبيت المكتبات المطلوبة قبل التشغيل إن وجدت
+    log_path = os.path.join(srv["path"], "out.log")
+    with open(log_path, "a", encoding='utf-8') as log_file:
+        if server_type == "Python":
+            auto_install_deps(srv["path"], log_file)
+        elif server_type == "Node.js":
+            auto_install_node_deps(srv["path"], log_file)
+
     if server_type == "Node.js":
         return start_node_server_process(folder)
     elif server_type == "PHP":
@@ -248,7 +257,7 @@ def start_python_server_process(folder):
     log_path = os.path.join(srv["path"], "out.log")
     error_path = os.path.join(srv["path"], "errors.log")
     log_file = open(log_path, "a", encoding='utf-8')
-    log_file.write(f"\n{'='*50}\n🚀 بدء التشغيل (Python) - {datetime.now()}\n📁 {main_file}\n🔌 المنفذ: {port}\n{'='*50}\n\n")
+    log_file.write(f"\n{'='*50}\n🚀 بدء التشغيل (Python) - {datetime.now()}\n📁 الملف الرئيسي: {main_file}\n🔌 المنفذ: {port}\n{'='*50}\n\n")
     log_file.flush()
 
     try:
@@ -260,7 +269,7 @@ def start_python_server_process(folder):
         srv["pid"] = proc.pid
         srv["start_time"] = time.time()
         save_db(db)
-        return True, "✅ تم التشغيل"
+        return True, "✅ تم التشغيل بنجاح"
     except Exception as e:
         return False, str(e)
 
@@ -268,7 +277,7 @@ def start_node_server_process(folder):
     srv = db["servers"].get(folder)
     main_file = srv.get("startup_file", "") or detect_main_file(srv["path"])
     if not main_file:
-        return False, "لا يوجد ملف تشغيل مدعوم"
+        return False, "لا يوجد ملف تشغيل مدعوم لـ Node.js"
     
     srv["startup_file"] = main_file
     port = srv.get("port") or get_assigned_port()
@@ -278,7 +287,7 @@ def start_node_server_process(folder):
     log_path = os.path.join(srv["path"], "out.log")
     error_path = os.path.join(srv["path"], "errors.log")
     log_file = open(log_path, "a", encoding='utf-8')
-    log_file.write(f"\n{'='*50}\n🚀 بدء التشغيل (Node.js) - {datetime.now()}\n📁 {main_file}\n🔌 المنفذ: {port}\n{'='*50}\n\n")
+    log_file.write(f"\n{'='*50}\n🚀 بدء التشغيل (Node.js) - {datetime.now()}\n📁 الملف: {main_file}\n🔌 المنفذ: {port}\n{'='*50}\n\n")
     log_file.flush()
 
     try:
@@ -290,7 +299,7 @@ def start_node_server_process(folder):
         srv["pid"] = proc.pid
         srv["start_time"] = time.time()
         save_db(db)
-        return True, "✅ تم التشغيل"
+        return True, "✅ تم التشغيل بنجاح"
     except Exception as e:
         return False, str(e)
 
@@ -311,7 +320,7 @@ def start_php_server_process(folder):
         srv["pid"] = proc.pid
         srv["start_time"] = time.time()
         save_db(db)
-        return True, "✅ تم تشغيل خادم PHP"
+        return True, "✅ تم تشغيل خادم PHP بنجاح"
     except Exception as e:
         return False, f"فشل تشغيل PHP: {e}"
 
@@ -331,7 +340,7 @@ def start_html_server_process(folder):
         srv["pid"] = proc.pid
         srv["start_time"] = time.time()
         save_db(db)
-        return True, "✅ تم تشغيل خادم Static HTML"
+        return True, "✅ تم تشغيل خادم Static HTML بنجاح"
     except Exception as e:
         return False, str(e)
 
@@ -627,7 +636,7 @@ def list_servers():
         "servers": user_servers,
         "stats": {
             "used": len(user_servers),
-            "total": user.get("max_servers", 2),
+            "total": user.get("max_servers", 10),
             "expiry": user.get("expiry_days", 365),
             "disk_used": round(total_disk_used_mb, 2),
             "disk_total": user.get("storage_limit", 512000),
@@ -644,10 +653,10 @@ def add_server():
         return jsonify({"success": False, "message": "مستخدم غير موجود"})
     
     user_srv_count = len([s for s in db["servers"].values() if s["owner"] == session["email"]])
-    if user_srv_count >= user.get("max_servers", 2):
-        return jsonify({"success": False, "message": f"وصلت للحد الأقصى ({user.get('max_servers', 2)}) سيرفر"})
+    if user_srv_count >= user.get("max_servers", 10):
+        return jsonify({"success": False, "message": f"وصلت للحد الأقصى ({user.get('max_servers', 10)}) سيرفر"})
     
-    data = request.get_json()
+    data = request.get_json() or {}
     name = data.get("name", "").strip()
     server_type = data.get("server_type", "Python")
     
@@ -679,7 +688,11 @@ def add_server():
         "cpu_limit": plan["cpu"]
     }
     save_db(db)
-    return jsonify({"success": True, "message": f"✅ تم إنشاء {server_type} سيرفر: {name}"})
+    
+    # تشغيل السيرفر تلقائياً عند إنشائه ليعمل فوراً
+    start_server_process(folder)
+    
+    return jsonify({"success": True, "message": f"✅ تم إنشاء وتشغيل سيرفر {server_type}: {name}", "folder": folder})
 
 @app.route('/api/server/action/<folder>/<action>', methods=['POST'])
 def server_action(folder, action):
@@ -696,17 +709,17 @@ def server_action(folder, action):
         return jsonify({"success": ok, "message": msg})
     elif action == "stop":
         stop_server_process(folder)
-        return jsonify({"success": True, "message": "🛑 تم الإيقاف"})
+        return jsonify({"success": True, "message": "🛑 تم الإيقاف بنجاح"})
     elif action == "restart":
         restart_server(folder)
-        return jsonify({"success": True, "message": "🔄 تم إعادة التشغيل"})
+        return jsonify({"success": True, "message": "🔄 تم إعادة التشغيل بنجاح"})
     elif action == "delete":
         stop_server_process(folder)
         if os.path.exists(srv["path"]):
             shutil.rmtree(srv["path"], ignore_errors=True)
         del db["servers"][folder]
         save_db(db)
-        return jsonify({"success": True, "message": "🗑 تم الحذف"})
+        return jsonify({"success": True, "message": "🗑 تم حذف السيرفر نهائياً"})
     return jsonify({"success": False})
 
 @app.route('/api/server/stats/<folder>')
@@ -744,10 +757,11 @@ def get_server_stats(folder):
         "uptime": uptime_str(srv.get("start_time")) if status == "Running" else "0 ثانية",
         "port": srv.get("port", "--"),
         "ip": get_public_ip(),
-        "server_type": srv.get("server_type", "Python")
+        "server_type": srv.get("server_type", "Python"),
+        "name": srv.get("name", "Server")
     })
 
-# ============== الملفات (دعم .html, .htm, .js, .php, .py) ==============
+# ============== إدارة الملفات (رفع من 1 إلى 100+ ملف دفعة واحدة) ==============
 @app.route('/api/files/list/<folder>')
 def list_server_files(folder):
     if "email" not in session:
@@ -811,12 +825,12 @@ def save_file_content(folder, filename):
     if '..' in filename:
         return jsonify({"success": False})
     
-    data = request.get_json()
+    data = request.get_json() or {}
     fpath = os.path.join(srv["path"], filename)
     try:
         with open(fpath, 'w', encoding='utf-8') as f:
             f.write(data.get("content", ""))
-        return jsonify({"success": True, "message": "✅ تم الحفظ"})
+        return jsonify({"success": True, "message": "✅ تم حفظ الملف بنجاح"})
     except Exception as e:
         return jsonify({"success": False, "message": str(e)})
 
@@ -828,7 +842,11 @@ def upload_files(folder):
     if not srv or srv["owner"] != session["email"]:
         return jsonify({"success": False})
     
+    # دعم رفع ملفات متعددة (من 1 إلى 100+ ملف دفعة واحدة)
     files = request.files.getlist('files[]')
+    if not files:
+        files = request.files.getlist('file')
+        
     uploaded = 0
     for f in files:
         try:
@@ -836,17 +854,35 @@ def upload_files(folder):
                 save_path = os.path.join(srv["path"], f.filename)
                 f.save(save_path)
                 uploaded += 1
-        except Exception:
-            pass
+                
+                # فك ضغط الملفات المضغوطة تلقائياً إذا تم رفع ملف zip
+                if f.filename.lower().endswith('.zip'):
+                    try:
+                        with zipfile.ZipFile(save_path, 'r') as zf:
+                            zf.extractall(srv["path"])
+                    except Exception:
+                        pass
+        except Exception as e:
+            print(f"Error uploading file: {e}")
     
     if uploaded > 0:
         stype = srv.get("server_type")
-        if stype == "Node.js":
-            threading.Thread(target=auto_install_node_deps, args=(srv["path"], open(os.path.join(srv["path"], "out.log"), "a", encoding='utf-8')), daemon=True).start()
-        elif stype == "Python":
-            threading.Thread(target=auto_install_deps, args=(srv["path"], open(os.path.join(srv["path"], "out.log"), "a", encoding='utf-8')), daemon=True).start()
-        return jsonify({"success": True, "message": f"✅ تم رفع {uploaded} ملف بنجاح"})
-    return jsonify({"success": False, "message": "فشل الرفع"})
+        log_file_path = os.path.join(srv["path"], "out.log")
+        
+        # تثبيت المكتبات وتشغيل البوت تلقائياً بعد اكتمال رفع الملفات
+        def post_upload_tasks():
+            with open(log_file_path, "a", encoding='utf-8') as log_f:
+                if stype == "Node.js":
+                    auto_install_node_deps(srv["path"], log_f)
+                elif stype == "Python":
+                    auto_install_deps(srv["path"], log_f)
+            # إعادة تشغيل السيرفر لتطبيق التحديثات والملفات الجديدة وتشغيل البوت فوراً
+            restart_server(folder)
+            
+        threading.Thread(target=post_upload_tasks, daemon=True).start()
+        
+        return jsonify({"success": True, "message": f"✅ تم رفع {uploaded} ملف بنجاح وجاري تثبيت المكتبات وتشغيل السيرفر!"})
+    return jsonify({"success": False, "message": "لم يتم اختيار أي ملفات للرفع"})
 
 @app.route('/api/files/delete/<folder>', methods=['POST'])
 def delete_files(folder):
@@ -873,7 +909,7 @@ def delete_files(folder):
                 deleted += 1
             except Exception:
                 pass
-    return jsonify({"success": True, "message": f"🗑 تم حذف {deleted} ملف"})
+    return jsonify({"success": True, "message": f"🗑 تم حذف {deleted} ملف بنجاح"})
 
 @app.route('/api/files/create/<folder>', methods=['POST'])
 def create_file_api(folder):
@@ -883,16 +919,16 @@ def create_file_api(folder):
     if not srv or srv["owner"] != session["email"]:
         return jsonify({"success": False})
     
-    data = request.get_json()
+    data = request.get_json() or {}
     filename = data.get("filename", "").strip()
     if not filename or '..' in filename:
-        return jsonify({"success": False})
+        return jsonify({"success": False, "message": "اسم الملف غير صالح"})
     
     fpath = os.path.join(srv["path"], filename)
     try:
         with open(fpath, 'w', encoding='utf-8') as f:
             f.write(data.get("content", ""))
-        return jsonify({"success": True, "message": f"✅ تم إنشاء {filename}"})
+        return jsonify({"success": True, "message": f"✅ تم إنشاء الملف {filename} بنجاح"})
     except Exception as e:
         return jsonify({"success": False, "message": str(e)})
 
@@ -904,7 +940,7 @@ def rename_file(folder):
     if not srv or srv["owner"] != session["email"]:
         return jsonify({"success": False})
     
-    data = request.get_json()
+    data = request.get_json() or {}
     old_name = data.get("old_name", "").strip()
     new_name = data.get("new_name", "").strip()
     if '..' in old_name or '..' in new_name:
@@ -913,10 +949,10 @@ def rename_file(folder):
     old_path = os.path.join(srv["path"], old_name)
     new_path = os.path.join(srv["path"], new_name)
     if not os.path.exists(old_path):
-        return jsonify({"success": False})
+        return jsonify({"success": False, "message": "الملف غير موجود"})
     try:
         os.rename(old_path, new_path)
-        return jsonify({"success": True, "message": f"✅ تم تغيير الاسم"})
+        return jsonify({"success": True, "message": f"✅ تم تغيير اسم الملف بنجاح"})
     except Exception as e:
         return jsonify({"success": False, "message": str(e)})
 
@@ -930,13 +966,13 @@ def unzip_file(folder, filename):
     
     zip_path = os.path.join(srv["path"], filename)
     if not os.path.exists(zip_path):
-        return jsonify({"success": False})
+        return jsonify({"success": False, "message": "الملف المضغوط غير موجود"})
     try:
         with zipfile.ZipFile(zip_path, 'r') as zf:
             zf.extractall(srv["path"])
-        return jsonify({"success": True, "message": f"✅ تم فك الضغط"})
+        return jsonify({"success": True, "message": f"✅ تم فك ضغط الملف بنجاح"})
     except Exception:
-        return jsonify({"success": False, "message": "فشل فك الضغط"})
+        return jsonify({"success": False, "message": "فشل فك ضغط الملف"})
 
 @app.route('/api/server/set-startup/<folder>', methods=['POST'])
 def set_startup_file(folder):
@@ -946,19 +982,19 @@ def set_startup_file(folder):
     if not srv or srv["owner"] != session["email"]:
         return jsonify({"success": False})
     
-    data = request.get_json()
+    data = request.get_json() or {}
     filename = data.get("filename", "").strip()
     if not filename or '..' in filename:
         return jsonify({"success": False})
     
     srv["startup_file"] = filename
     save_db(db)
-    return jsonify({"success": True, "message": f"✅ تم تعيين {filename}"})
+    return jsonify({"success": True, "message": f"✅ تم تعيين ملف التشغيل الرئيسي إلى {filename}"})
 
-# ============== API البوت ==============
+# ============== API البوت الخارجي ==============
 @app.route('/api/bot/verify', methods=['POST'])
 def bot_verify():
-    data = request.get_json()
+    data = request.get_json() or {}
     api_key = data.get('api_key', '').strip()
     if not api_key:
         return jsonify({"success": False})
@@ -969,7 +1005,7 @@ def bot_verify():
         "success": True,
         "email": email,
         "is_admin": is_admin(email),
-        "max_servers": user.get("max_servers", 2)
+        "max_servers": user.get("max_servers", 10)
     })
 
 @app.route('/api/bot/servers', methods=['GET'])
@@ -995,7 +1031,7 @@ def bot_list_servers():
 
 @app.route('/api/bot/server/action', methods=['POST'])
 def bot_server_action():
-    data = request.get_json()
+    data = request.get_json() or {}
     api_key = data.get('api_key')
     folder = data.get('folder')
     action = data.get('action')
@@ -1046,3 +1082,4 @@ def bot_console():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=False, threaded=True)
+
